@@ -1,3 +1,15 @@
+# THIS IS A WORK IN PROGRESS USE AT YOUR OWN RISK!!!!!!!
+
+# REPORT BUGS AND SUGGEST IMPROVEMENTS!!!!
+
+#
+
+#
+
+#
+
+#
+
 # FireflyIII Integration
 
 _Component to integrate with [FireflyIII][fireflyiii] chargers._
