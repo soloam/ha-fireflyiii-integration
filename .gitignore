@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VSCode
+.vscode
+
+#Resources
+resources/*.psd
+
+#Some Files Used only in DEV
+*_dev.py

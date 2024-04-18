@@ -1,0 +1,127 @@
+{
+  "config": {
+    "error": {
+      "auth": "The auth token provided is not valid.",
+      "invalid_url": "The provided URL is not valid, set url with port http://fireflyiiiurl:port"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name",
+          "access_token": "FireflyIII access token",
+          "url": "FireflyIII url"
+        },
+        "description": "Welcome to FireflyIII integrations, please provide login information",
+        "title": "FireflyIII Integration - Authentication"
+      },
+      "sensors": {
+        "data": {
+          "return_budgets": "Return budgets",
+          "return_accounts": "Return accounts",
+          "return_piggy_banks": "Return piggy banks",
+          "return_categories": "Return categories",
+          "return_invoices": "Return invoices"
+        },
+        "description": "Select the sensors to import",
+        "title": "Import Sensors"
+      },
+      "config": {
+        "data": {
+          "return_account_type": "Types of accounts to return",
+          "return_accounts_ids": "Return only this accounts id's (empty for all)",
+          "return_category_ids": "Return only this categories id's (empty for all)",
+          "date_year_start": "Day for beginning of the year",
+          "date_month_start": "Day for beginning of the month",
+          "date_week_start": "Day for beginning of the week",
+          "date_lastx_back": "Go back",
+          "date_lastx_back_type": "Go back"
+        },
+        "description": "Select configurations for the sensors",
+        "title": "Configuration"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "account_asset": {
+        "name": "Asset account {account_name}",
+        "state_attributes": {
+          "type": {
+            "name": "FireflyIII type",
+            "state": {
+              "account": "Account"
+            }
+          },
+          "account_type": {
+            "name": "FireflyIII Account Type",
+            "state": {
+              "asset": "Asset account"
+            }
+          }
+        }
+      },
+      "account_expense": {
+        "name": "Expense account {account_name}"
+      },
+      "account_revenue": {
+        "name": "Revenue account {account_name}"
+      },
+      "account_liabiliti": {
+        "name": "Liabiliti account {account_name}"
+      },
+      "account_cash": {
+        "name": "Cash account"
+      },
+      "category": {
+        "name": "Category {category_name}"
+      }
+    }
+  },
+  "selector": {
+    "return_account_type": {
+      "options": {
+        "asset": "Asset Accounts",
+        "expense": "Expense Accounts",
+        "revenue": "Revenue Accounts",
+        "liabilities": "Liabilities Accounts",
+        "cash": "Cash Account"
+      }
+    },
+    "return_range": {
+      "options": {
+        "year": "Last Year",
+        "month": "Last Month",
+        "week": "Last Week",
+        "day": "Today",
+        "lastx": "Custom"
+      }
+    },
+    "date_lastx_back_type": {
+      "options": {
+        "d": "Days",
+        "w": "Weeks",
+        "y": "Years"
+      }
+    }
+  },
+
+  "options": {
+    "error": {},
+    "step": {
+      "init": {
+        "data": {
+          "return_account_type": "Types of accounts to return",
+          "return_accounts_ids": "Return only this accounts id's (empty for all)",
+          "return_category_ids": "Return only this categories id's (empty for all)",
+          "date_year_start": "Day for beginning of the year",
+          "date_month_start": "Day for beginning of the month",
+          "date_week_start": "Day for beginning of the week",
+          "date_lastx_back": "Go back",
+          "date_lastx_back_type": "Go back"
+        },
+        "description": "Select configurations for the sensors",
+        "title": "Configuration"
+      }
+    }
+  }
+}

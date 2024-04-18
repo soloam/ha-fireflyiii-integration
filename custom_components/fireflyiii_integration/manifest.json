@@ -1,0 +1,11 @@
+{
+  "domain": "fireflyiii_integration",
+  "name": "FireflyIII Integration",
+  "codeowners": ["@soloam"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/soloam/ha-fireflyiii-integration",
+  "iot_class": "cloud_polling",
+  "requirements": ["aiohttp", "datetimerange"],
+  "version": "1.0.0"
+}
