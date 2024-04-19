@@ -2,9 +2,24 @@
 
 # REPORT BUGS AND SUGGEST IMPROVEMENTS!!!!
 
-#
+# BETA ROADMAP
 
-#
+#### Some of the concluded features can change durring Beta
+
+- [x] Config Flow \*
+- [x] Categories
+- [x] Accounts
+- [ ] Invoices in calendar
+- [ ] Import Piggy Banks
+- [ ] Services
+- [ ] Auto create Webhooks in FireflyIII
+- [ ] Handle Webhooks to instant response
+- [ ] Add to HACS
+- [ ] Tests
+
+\* - Please note that I’ll not be retrofitting configs to versions until its final! So on some releases of beta I’ll add to the release notes a information to delete the integration and add it again. No need to remove from HACS, just remove from Home Assistant and make the config again!
+
+Feedbacks are more than welcome, also feature requests.
 
 #
 
