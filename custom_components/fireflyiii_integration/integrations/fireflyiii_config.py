@@ -7,7 +7,7 @@ Defines a base to the config
 from collections import UserDict
 from datetime import datetime
 from types import MappingProxyType
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -77,7 +77,7 @@ class FireflyiiiConfig(UserDict):
 
     # pylint: disable=[unused-argument,redefined-builtin]
     def __init__(self, dict=None, /, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(cast(UserDict, dict))
 
         self._api: Optional[Fireflyiii] = None
         self._api_data: Dict["str", Any] = {}
