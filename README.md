@@ -10,7 +10,7 @@
 - [x] Categories
 - [x] Accounts
 - [x] Bills in calendar
-- [ ] Import Piggy Banks
+- [x] Import Piggy Banks
 - [ ] Services
 - [ ] Auto create Webhooks in FireflyIII
 - [ ] Handle Webhooks to instant response
