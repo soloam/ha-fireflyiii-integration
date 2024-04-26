@@ -3,11 +3,13 @@
 import logging
 
 from homeassistant import config_entries, core
-from homeassistant.const import CONF_NAME, CONF_URL, Platform
+from homeassistant.const import Platform
 from homeassistant.helpers import device_registry
 
 from .const import COORDINATOR, DATA, DOMAIN, MANUFACTURER
+from .integrations.fireflyiii_config import FireflyiiiConfig
 from .integrations.fireflyiii_coordinator import FireflyiiiCoordinator
+from .integrations.fireflyiii_objects import FireflyiiiAbout
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,15 +34,22 @@ async def async_setup_entry(
     await coordinator.async_refresh()
 
     device = device_registry.async_get(hass)
+
+    about = coordinator.api_data.about
+    if not isinstance(about, FireflyiiiAbout):
+        return False
+
+    config = FireflyiiiConfig(entry.data)
+
     device.async_get_or_create(
         config_entry_id=entry.entry_id,
         connections={(DOMAIN, entry.entry_id)},
         identifiers={(DOMAIN, entry.entry_id)},
-        name=entry.data.get(CONF_NAME),
+        name=config.name,
         manufacturer=MANUFACTURER,
-        model=coordinator.api_data.get("about", {}).get("os", ""),
-        sw_version=coordinator.api_data.get("about", {}).get("version", ""),
-        configuration_url=entry.data.get(CONF_URL, ""),
+        model=about.os,
+        sw_version=about.version,
+        configuration_url=config.host,
     )
 
     # Forward the setup to the sensor platform.

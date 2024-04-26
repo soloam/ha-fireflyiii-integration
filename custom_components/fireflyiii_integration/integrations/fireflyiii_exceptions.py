@@ -27,3 +27,7 @@ class UnsupportedFeature(FireflyiiiException):
 
 class InvalidType(FireflyiiiException):
     """Exception for invalid types."""
+
+
+class FireflyiiiObjectException(Exception):
+    """Exception to FireflyIII Objects"""

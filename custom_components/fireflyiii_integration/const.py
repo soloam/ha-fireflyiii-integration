@@ -2,49 +2,27 @@
 
 # pylint: disable=unused-import
 
-from typing import Any, Final, Mapping, Optional
+from typing import Any, Final, List, Mapping, Optional
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
     EntityDescription,
 )
-from homeassistant.components.calendar import CalendarEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import (
-    CONF_ACCESS_TOKEN,
-    CONF_NAME,
-    CONF_PATH,
-    CONF_URL,
-    WEEKDAYS,
-)
-from homeassistant.core import callback
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .integrations.fireflyiii_config import FireflyiiiConfig
+from .integrations.fireflyiii_objects import FireflyiiiObjectBase, FireflyiiiObjectType
+
 DOMAIN = "fireflyiii_integration"
 MANUFACTURER = "FireflyIII"
-
-ATTR_CLONES = "clones"
-ATTR_CLONES_UNIQUE = "clones_unique"
-ATTR_FORKS = "forks"
-ATTR_LATEST_COMMIT_MESSAGE = "latest_commit_message"
-ATTR_LATEST_COMMIT_SHA = "latest_commit_sha"
-ATTR_LATEST_OPEN_ISSUE_URL = "latest_open_issue_url"
-ATTR_LATEST_OPEN_PULL_REQUEST_URL = "latest_open_pull_request_url"
-ATTR_LATEST_RELEASE_TAG = "latest_release_tag"
-ATTR_LATEST_RELEASE_URL = "latest_release_url"
-ATTR_OPEN_ISSUES = "open_issues"
-ATTR_OPEN_PULL_REQUESTS = "open_pull_requests"
-ATTR_PATH = "path"
-ATTR_STARGAZERS = "stargazers"
-ATTR_VIEWS = "views"
-ATTR_VIEWS_UNIQUE = "views_unique"
-
 
 COORDINATOR = "coordinator"
 DATA = "data"
@@ -53,67 +31,7 @@ STORE_VERSION = "1.0.0"
 STORE_PREFIX = "fireflyiii"
 
 
-CONF_NAME_DEFAULT = "FireflyIII"
-
-
-CONF_DATE_LASTX_DAYS_TYPE = "d"
-CONF_DATE_LASTX_WEEKS_TYPE = "w"
-CONF_DATE_LASTX_YEARS_TYPE = "y"
-
-CONF_DATE_LASTX_BACK_TYPES = [
-    CONF_DATE_LASTX_DAYS_TYPE,
-    CONF_DATE_LASTX_WEEKS_TYPE,
-    CONF_DATE_LASTX_YEARS_TYPE,
-]
-
-CONF_RETURN_RANGE_YEAR_TYPE = "year"
-CONF_RETURN_RANGE_MONTH_TYPE = "month"
-CONF_RETURN_RANGE_WEEK_TYPE = "week"
-CONF_RETURN_RANGE_DAY_TYPE = "day"
-CONF_RETURN_RANGE_LASTX_TYPE = "lastx"
-
-CONF_RETURN_RANGE_TYPES = [
-    CONF_RETURN_RANGE_YEAR_TYPE,
-    CONF_RETURN_RANGE_MONTH_TYPE,
-    CONF_RETURN_RANGE_WEEK_TYPE,
-    CONF_RETURN_RANGE_DAY_TYPE,
-    CONF_RETURN_RANGE_LASTX_TYPE,
-]
-
-CONF_RETURN_ACCOUNT_TYPES = ["asset", "expense", "revenue", "liabilities", "cash"]
-CONF_RETURN_ACCOUNT_TYPE_DEFAULT = ["asset"]
-
-CONF_RETURN_ACCOUNTS = "return_accounts"
-CONF_RETURN_ACCOUNTS_DEFAULT = True
-CONF_RETURN_ACCOUNT_ID = "return_accounts_ids"
-CONF_RETURN_BUDGETS = "return_budgets"
-CONF_RETURN_BUDGETS_DEFAULT = False
-CONF_RETURN_PIGGY_BANKS = "return_piggy_banks"
-CONF_RETURN_PIGGY_BANKS_DEFAULT = False
-CONF_RETURN_CATEGORIES = "return_categories"
-CONF_RETURN_CATEGORIES_DEFAULT = True
-CONF_RETURN_CATEGORIES_ID = "return_category_ids"
-CONF_RETURN_INVOICES = "return_invoices"
-CONF_RETURN_INVOICES_DEFAULT = True
-CONF_RETURN_RANGE = "return_range"
-CONF_RETURN_RANGE_DEFAULT = CONF_RETURN_RANGE_MONTH_TYPE
-
-CONF_RETURN_ACCOUNT_TYPE = "return_account_type"
-
-CONF_DATE_MONTH_START = "date_month_start"
-CONF_DATE_WEEK_START = "date_week_start"
-CONF_DATE_YEAR_START = "date_year_start"
-
-CONF_DATE_LASTX_BACK_TYPE = "date_lastx_back_type"
-CONF_DATE_LASTX_BACK = "date_lastx_back"
-
-FIREFLYIII_SERVER_SENSOR_TYPE = "server"
-FIREFLYIII_ACCOUNT_SENSOR_TYPE = "account"
-FIREFLYIII_CATEGORY_SENSOR_TYPE = "category"
-FIREFLYIII_BUDGET_SENSOR_TYPE = "budget"
-FIREFLYIII_INVOICES_SENSOR_TYPE = "invoices"
-FIREFLYIII_PIGGYBANK_SENSOR_TYPE = "piggy_bank"
-
+# Account Type Mappings
 FIREFLYIII_ACCOUNT_SENSOR_CONFIGS = {
     "asset": {"icon": "mdi:account-cash", "translation_key": "account_asset"},
     "expense": {"icon": "mdi:cash-minus", "translation_key": "account_expense"},
@@ -122,49 +40,50 @@ FIREFLYIII_ACCOUNT_SENSOR_CONFIGS = {
     "cash": {"icon": "mdi:wallet-bifold", "translation_key": "account_cash"},
 }
 
-# Servers Descriptions
-FIREFLYIII_SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
-    FIREFLYIII_SERVER_SENSOR_TYPE: BinarySensorEntityDescription(
-        key=FIREFLYIII_SERVER_SENSOR_TYPE,
+# Sensors Descriptions Classes
+FIREFLYIII_SENSOR_DESCRIPTIONS: Final[dict[str, SensorEntityDescription]] = {
+    FireflyiiiObjectType.SERVER: BinarySensorEntityDescription(
+        key=FireflyiiiObjectType.SERVER,
         name="Server Status",
         icon="mdi:server",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    FIREFLYIII_ACCOUNT_SENSOR_TYPE: SensorEntityDescription(
-        key=FIREFLYIII_ACCOUNT_SENSOR_TYPE,
+    FireflyiiiObjectType.ACCOUNTS: SensorEntityDescription(
+        key=FireflyiiiObjectType.ACCOUNTS,
         icon="mdi:account-cash",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
-    FIREFLYIII_CATEGORY_SENSOR_TYPE: SensorEntityDescription(
-        key=FIREFLYIII_CATEGORY_SENSOR_TYPE,
-        translation_key=FIREFLYIII_CATEGORY_SENSOR_TYPE,
+    FireflyiiiObjectType.CATEGORIES: SensorEntityDescription(
+        key=FireflyiiiObjectType.CATEGORIES,
+        translation_key=FireflyiiiObjectType.CATEGORIES,
         icon="mdi:shape-plus",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
-    FIREFLYIII_BUDGET_SENSOR_TYPE: SensorEntityDescription(
-        key=FIREFLYIII_BUDGET_SENSOR_TYPE,
+    FireflyiiiObjectType.BUDGETS: SensorEntityDescription(
+        key=FireflyiiiObjectType.BUDGETS,
         name="Budget",
         icon="mdi:calculator",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
-    FIREFLYIII_PIGGYBANK_SENSOR_TYPE: SensorEntityDescription(
-        key=FIREFLYIII_PIGGYBANK_SENSOR_TYPE,
+    FireflyiiiObjectType.PIGGY_BANKS: SensorEntityDescription(
+        key=FireflyiiiObjectType.PIGGY_BANKS,
         name="Piggy Bank",
         icon="mdi:piggy-bank-outline",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
         suggested_display_precision=2,
     ),
-    FIREFLYIII_INVOICES_SENSOR_TYPE: EntityDescription(
-        key=FIREFLYIII_INVOICES_SENSOR_TYPE,
-        name="Invoices",
+    FireflyiiiObjectType.BILLS: EntityDescription(
+        key=FireflyiiiObjectType.BILLS,
+        translation_key=FireflyiiiObjectType.BILLS,
+        name="Bills",
         icon="mdi:invoice-clock-outline",
     ),
 }
@@ -174,18 +93,22 @@ FIREFLYIII_SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
 class FireflyiiiEntityBase(CoordinatorEntity):
     """FireflyIII Entity base class"""
 
-    _attr_sources = []
-
-    _type = ""
-
+    _attr_sources: List[str] = []
+    _type: FireflyiiiObjectType = FireflyiiiObjectType.NONE
     _attr_has_entity_name = True
+    _user_config: Optional[FireflyiiiConfig] = None
 
     def __init__(
-        self, coordinator, entity_description: EntityDescription = None, fireflyiii_id=0
+        self,
+        coordinator,
+        entity_description: EntityDescription = None,
+        fireflyiii_id=0,
+        locale: Optional[str] = None,
     ):
         super().__init__(coordinator)
 
         self._fireflyiii_id = fireflyiii_id
+        self._user_locale = locale
 
         if entity_description:
             self.entity_description = entity_description
@@ -199,9 +122,19 @@ class FireflyiiiEntityBase(CoordinatorEntity):
         )
 
     @property
-    def fireflyiii_id(self):
+    def locale(self) -> str:
+        """User Locale"""
+        return self._user_locale if self._user_locale else ""
+
+    @property
+    def fireflyiii_id(self) -> str:
         """Return FireflyIII object ID"""
         return self._fireflyiii_id
+
+    @property
+    def fireflyiii_type(self) -> str:
+        """Return FireflyIII object Type"""
+        return self._type
 
     @property
     def key(self):
@@ -231,75 +164,35 @@ class FireflyiiiEntityBase(CoordinatorEntity):
     @property
     def entry_data(self):
         """Return entry data"""
-        return self.config.data
+
+        if not self._user_config:
+            self._user_config = FireflyiiiConfig(self.config.data)
+
+        return self._user_config
 
     @property
     def _entity_data(self):
         """Return entity data from coordinator"""
         if not self.coordinator:
             return {}
-
-        return self.coordinator.api_data.get(self._type, {}).get(self.fireflyiii_id, {})
+        return self.coordinator.api_data.get(self._type, {})
 
     @property
-    def fireflyiii_type(self) -> str:
+    def object_type(self) -> FireflyiiiObjectType:
         """Returns FireflyIII object type"""
         return self._type
 
     @property
-    def entity_start_data(self):
-        """Returns entity data from the start of the range"""
-
-        entity_data = self._entity_data
-
-        # Returns The Desired State to the entity
-        if "start_state" in entity_data:
-            return entity_data["start_state"]
-        elif "end_state" in entity_data:
-            return entity_data["end_state"]
-        elif "attributes" in entity_data:
-            return entity_data
-        else:
-            return {}
-
-    @property
-    def entity_end_data(self):
-        """Returns entity data from the end of the range"""
-
-        entity_data = self._entity_data
-
-        # Returns The Desired State to the entity
-        if "end_state" in entity_data:
-            return entity_data["end_state"]
-        elif "start_state" in entity_data:
-            return entity_data["start_state"]
-        elif "attributes" in entity_data:
-            return entity_data
-        else:
-            return {}
-
-    @property
-    def entity_data(self):
+    def entity_data(self) -> FireflyiiiObjectBase:
         """Returns entity data"""
-
-        entity_data = self._entity_data
-
-        # Returns The Desired State to the entity
-        if "end_state" in entity_data:
-            return entity_data["end_state"]
-        elif "start_state" in entity_data:
-            return entity_data["start_state"]
-        elif "attributes" in entity_data:
-            return entity_data
-        else:
-            return {}
+        return self._entity_data.get(self.fireflyiii_id, FireflyiiiConfig())
 
     @property
     def device_info(self) -> dict:
         """Return a description for device registry."""
         info = {
             "manufacturer": MANUFACTURER,
-            "name": self.entry_data[CONF_NAME],
+            "name": self.entry_data.name,
             "connections": {(DOMAIN, self.entry_id)},
         }
 

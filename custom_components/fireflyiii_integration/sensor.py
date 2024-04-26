@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Optional, cast
 
 from homeassistant import config_entries, core
 from homeassistant.components.sensor import SensorEntity
@@ -12,13 +13,15 @@ from .const import (
     COORDINATOR,
     DOMAIN,
     FIREFLYIII_ACCOUNT_SENSOR_CONFIGS,
-    FIREFLYIII_ACCOUNT_SENSOR_TYPE,
-    FIREFLYIII_BUDGET_SENSOR_TYPE,
-    FIREFLYIII_CATEGORY_SENSOR_TYPE,
-    FIREFLYIII_PIGGYBANK_SENSOR_TYPE,
-    FIREFLYIII_SENSOR_TYPES,
+    FIREFLYIII_SENSOR_DESCRIPTIONS,
+    STATE_UNAVAILABLE,
     FireflyiiiEntityBase,
     SensorEntityDescription,
+)
+from .integrations.fireflyiii_objects import (
+    FireflyiiiAccount,
+    FireflyiiiCategory,
+    FireflyiiiObjectType,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,42 +44,37 @@ async def async_setup_entry(
     coordinator = config[COORDINATOR]
 
     accounts = []
-    if FIREFLYIII_ACCOUNT_SENSOR_TYPE in coordinator.api_data:
-        for account_id, _ in coordinator.api_data[
-            FIREFLYIII_ACCOUNT_SENSOR_TYPE
-        ].items():
-
-            obj = FireflyiiiAccount(
-                coordinator,
-                FIREFLYIII_SENSOR_TYPES[FIREFLYIII_ACCOUNT_SENSOR_TYPE],
-                account_id,
-            )
-
-            accounts.append(obj)
+    for account_id in coordinator.api_data.accounts:
+        obj = FireflyiiiAccountSensorEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.ACCOUNTS],
+            account_id,
+        )
+        accounts.append(obj)
 
     categories = []
-    if FIREFLYIII_CATEGORY_SENSOR_TYPE in coordinator.api_data:
-        for category_id in coordinator.api_data[FIREFLYIII_CATEGORY_SENSOR_TYPE]:
-            obj = FireflyiiiCategory(
-                coordinator,
-                FIREFLYIII_SENSOR_TYPES[FIREFLYIII_CATEGORY_SENSOR_TYPE],
-                category_id,
-            )
+    for category_id in coordinator.api_data.categories:
+        obj = FireflyiiiCategorySensorEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.CATEGORIES],
+            category_id,
+        )
 
-            categories.append(obj)
+        categories.append(obj)
 
     budgets = []
-    if FIREFLYIII_BUDGET_SENSOR_TYPE in coordinator.api_data:
-        obj = FireflyiiiBudget(
-            coordinator, FIREFLYIII_SENSOR_TYPES[FIREFLYIII_BUDGET_SENSOR_TYPE]
+    if FireflyiiiObjectType.BUDGETS in coordinator.api_data:
+        obj = FireflyiiiBudgetSensorEntity(
+            coordinator, FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BUDGETS]
         )
 
         budgets.append(obj)
 
     piggybank = []
-    if FIREFLYIII_PIGGYBANK_SENSOR_TYPE in coordinator.api_data:
-        obj = FireflyiiiPiggyBank(
-            coordinator, FIREFLYIII_SENSOR_TYPES[FIREFLYIII_PIGGYBANK_SENSOR_TYPE]
+    if FireflyiiiObjectType.PIGGY_BANKS in coordinator.api_data:
+        obj = FireflyiiiPiggyBankSensorEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.PIGGY_BANKS],
         )
 
         piggybank.append(obj)
@@ -90,10 +88,10 @@ async def async_setup_entry(
     async_add_entities(sensors, update_before_add=True)
 
 
-class FireflyiiiAccount(FireflyiiiEntityBase, SensorEntity):
+class FireflyiiiAccountSensorEntity(FireflyiiiEntityBase, SensorEntity):
     """Firefly Account Sensor"""
 
-    _type = FIREFLYIII_ACCOUNT_SENSOR_TYPE
+    _type = FireflyiiiObjectType.ACCOUNTS
 
     _attr_sources = ["account_type"]
 
@@ -101,59 +99,57 @@ class FireflyiiiAccount(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: int = None,
+        fireflyiii_id: Optional[int] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
-        account_attributes = self.entity_data.get("attributes", {})
-
-        self._account_type = account_attributes.get("type", None)
-
         if (
-            self._account_type
-            and self._account_type in FIREFLYIII_ACCOUNT_SENSOR_CONFIGS
-            and "icon" in FIREFLYIII_ACCOUNT_SENSOR_CONFIGS[self._account_type]
+            self.entity_data.type
+            and self.entity_data.type in FIREFLYIII_ACCOUNT_SENSOR_CONFIGS
+            and "icon" in FIREFLYIII_ACCOUNT_SENSOR_CONFIGS[self.entity_data.type]
         ):
-            self._attr_icon = FIREFLYIII_ACCOUNT_SENSOR_CONFIGS[self._account_type][
+            self._attr_icon = FIREFLYIII_ACCOUNT_SENSOR_CONFIGS[self.entity_data.type][
                 "icon"
             ]
 
             self._attr_translation_key = FIREFLYIII_ACCOUNT_SENSOR_CONFIGS[
-                self._account_type
+                self.entity_data.type
             ]["translation_key"]
 
             self._attr_translation_placeholders = {
-                "account_name": account_attributes.get("name", "")
+                "account_name": self.entity_data.name
             }
 
     @property
-    def native_unit_of_measurement(self) -> str:
-        account_attributes = self.entity_data.get("attributes", {})
+    def entity_data(self) -> FireflyiiiAccount:
+        """Returns entity data - overide to Type Hints"""
+        return cast(FireflyiiiAccount, super().entity_data)
 
-        currency_code = account_attributes.get("currency_code", "")
+    @property
+    def native_unit_of_measurement(self) -> str:
+
+        currency_code = self.entity_data.currency
 
         if not currency_code:
-            currency_code = self.coordinator.api_data.get("default_currency", "")
+            currency_code = self.coordinator.api_data.defaults.currency
 
         return currency_code
 
     @property
     def account_type(self) -> str:
         """Return FireflyIII account type"""
-        return self._account_type
+        return self.entity_data.type
 
     @property
     def native_value(self) -> float:
         """Return the state of the sensor."""
-
-        account_attributes = self.entity_data.get("attributes", {})
-        return account_attributes.get("current_balance", None)
+        return self.entity_data.balance
 
 
-class FireflyiiiCategory(FireflyiiiEntityBase, SensorEntity):
+class FireflyiiiCategorySensorEntity(FireflyiiiEntityBase, SensorEntity):
     """Firefly Category Sensor"""
 
-    _type = FIREFLYIII_CATEGORY_SENSOR_TYPE
+    _type = FireflyiiiObjectType.CATEGORIES
 
     _total = 0
 
@@ -161,62 +157,46 @@ class FireflyiiiCategory(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: int = None,
+        fireflyiii_id: Optional[int] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
-        account_attributes = self.entity_data.get("attributes", {})
+        self._attr_translation_placeholders = {"category_name": self.entity_data.name}
 
-        self._attr_translation_placeholders = {
-            "category_name": account_attributes.get("name", "")
-        }
+    @property
+    def entity_data(self) -> FireflyiiiCategory:
+        """Returns entity data - overide to Type Hints"""
+        return cast(FireflyiiiCategory, super().entity_data)
 
     @property
     def native_unit_of_measurement(self) -> str:
-        account_attributes = self.entity_data.get("attributes", {})
-        spent = account_attributes.get("spent", [{}])
-        earned = account_attributes.get("earned", [{}])
-
-        spent = [{}] if len(spent) == 0 else spent
-        earned = [{}] if len(earned) == 0 else earned
-
-        currency_code = spent[0].get("currency_code", "")
-        if not currency_code:
-            currency_code = earned[0].get("currency_code", "")
-
-        if not currency_code:
-            currency_code = self.coordinator.api_data.get("default_currency", "")
-
-        return currency_code
+        currency_code = self.entity_data.currency
+        return currency_code if currency_code else ""
 
     @property
     def native_value(self) -> float:
         """Return the state of the sensor."""
-        account_attributes = self.entity_data.get("attributes", {})
-        spent = account_attributes.get("spent", [{}])
-        earned = account_attributes.get("earned", [{}])
-
-        spent = [{}] if len(spent) == 0 else spent
-        earned = [{}] if len(earned) == 0 else earned
 
         try:
-            spent_val = float(spent[0].get("sum", 0))
-            earned_val = float(earned[0].get("sum", 0))
+            spent_val = float(self.entity_data.spent)
+            earned_val = float(self.entity_data.earned)
             current_balance = spent_val + earned_val
         except ValueError:
-            current_balance = None
+            current_balance = STATE_UNAVAILABLE
 
         return current_balance
 
 
-class FireflyiiiBudget(FireflyiiiEntityBase, SensorEntity):
+class FireflyiiiBudgetSensorEntity(FireflyiiiEntityBase, SensorEntity):
     """Firefly Budget Sensor"""
+
+    _type = FireflyiiiObjectType.BUDGETS
 
     def __init__(
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        data: dict = None,
+        data: Optional[dict] = None,
     ):
         self._data = data if data else {}
         super().__init__(coordinator, entity_description, self._data.get("id", 0))
@@ -224,14 +204,16 @@ class FireflyiiiBudget(FireflyiiiEntityBase, SensorEntity):
         self._state = None
 
 
-class FireflyiiiPiggyBank(FireflyiiiEntityBase, SensorEntity):
+class FireflyiiiPiggyBankSensorEntity(FireflyiiiEntityBase, SensorEntity):
     """Firefly PiggyBank Sensor"""
+
+    _type = FireflyiiiObjectType.PIGGY_BANKS
 
     def __init__(
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        data: dict = None,
+        data: Optional[dict] = None,
     ):
         self._data = data if data else {}
         super().__init__(coordinator, entity_description, self._data.get("id", 0))

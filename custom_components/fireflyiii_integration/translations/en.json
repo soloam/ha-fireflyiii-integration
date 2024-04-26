@@ -20,7 +20,7 @@
           "return_accounts": "Return accounts",
           "return_piggy_banks": "Return piggy banks",
           "return_categories": "Return categories",
-          "return_invoices": "Return invoices"
+          "return_bills": "Return bills"
         },
         "description": "Select the sensors to import",
         "title": "Import Sensors"
@@ -28,8 +28,8 @@
       "config": {
         "data": {
           "return_account_type": "Types of accounts to return",
-          "return_accounts_ids": "Return only this accounts id's (empty for all)",
-          "return_category_ids": "Return only this categories id's (empty for all)",
+          "return_accounts_ids": "Return only this accounts (empty for all)",
+          "return_category_ids": "Return only this categories (empty for all)",
           "date_year_start": "Day for beginning of the year",
           "date_month_start": "Day for beginning of the month",
           "date_week_start": "Day for beginning of the week",
@@ -42,18 +42,37 @@
     }
   },
   "entity": {
+    "calendar": {
+      "bills": {
+        "name": "Bills {bill_name}",
+        "state_attributes": {
+          "fireflyiii_id": {
+            "name": "FireflyIII id"
+          },
+          "fireflyiii_type": {
+            "name": "FireflyIII type",
+            "state": {
+              "bills": "Bills"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
       "account_asset": {
         "name": "Asset account {account_name}",
         "state_attributes": {
-          "type": {
+          "fireflyiii_id": {
+            "name": "FireflyIII id"
+          },
+          "fireflyiii_type": {
             "name": "FireflyIII type",
             "state": {
-              "account": "Account"
+              "accounts": "Account"
             }
           },
           "account_type": {
-            "name": "FireflyIII Account Type",
+            "name": "FireflyIII account type",
             "state": {
               "asset": "Asset account"
             }
@@ -72,26 +91,37 @@
       "account_cash": {
         "name": "Cash account"
       },
-      "category": {
-        "name": "Category {category_name}"
+      "categories": {
+        "name": "Category {category_name}",
+        "state_attributes": {
+          "fireflyiii_id": {
+            "name": "FireflyIII id"
+          },
+          "fireflyiii_type": {
+            "name": "FireflyIII type",
+            "state": {
+              "categories": "Category"
+            }
+          }
+        }
       }
     }
   },
   "selector": {
     "return_account_type": {
       "options": {
-        "asset": "Asset Accounts",
-        "expense": "Expense Accounts",
-        "revenue": "Revenue Accounts",
-        "liabilities": "Liabilities Accounts",
-        "cash": "Cash Account"
+        "asset": "Asset accounts",
+        "expense": "Expense accounts",
+        "revenue": "Revenue accounts",
+        "liabilities": "Liabilities accounts",
+        "cash": "Cash account"
       }
     },
     "return_range": {
       "options": {
-        "year": "Last Year",
-        "month": "Last Month",
-        "week": "Last Week",
+        "year": "Last year",
+        "month": "Last month",
+        "week": "Last week",
         "day": "Today",
         "lastx": "Custom"
       }
@@ -101,6 +131,17 @@
         "d": "Days",
         "w": "Weeks",
         "y": "Years"
+      }
+    },
+    "date_week_start": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     }
   },

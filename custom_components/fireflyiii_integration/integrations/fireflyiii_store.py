@@ -19,7 +19,7 @@ class FireflyiiiStore(Store):
     def __init__(
         self,
         hass: HomeAssistant,
-        version: int,
+        version: str,
         key: str,
     ) -> None:
         self._key = key
@@ -43,7 +43,7 @@ class FireflyiiiStore(Store):
     @classmethod
     async def async_get_store(cls, hass: HomeAssistant, key: str) -> "FireflyiiiStore":
         """Get The Store Async"""
-        return await cls.get_store(hass, key).async_load() or {}
+        return await cls.get_store(hass, key).async_load()
 
     async def save(self, data=None):
         """Save Store to disk"""

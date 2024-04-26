@@ -9,7 +9,7 @@
 - [x] Config Flow \*
 - [x] Categories
 - [x] Accounts
-- [ ] Invoices in calendar
+- [ ] Bills in calendar
 - [ ] Import Piggy Banks
 - [ ] Services
 - [ ] Auto create Webhooks in FireflyIII
@@ -27,7 +27,7 @@ Feedbacks are more than welcome, also feature requests.
 
 # FireflyIII Integration
 
-_Component to integrate with [FireflyIII][fireflyiii] chargers._
+_Component to integrate with [FireflyIII][fireflyiii]._
 
 [fireflyiii]: https://www.firefly-iii.org/
 
@@ -36,7 +36,7 @@ _Component to integrate with [FireflyIII][fireflyiii] chargers._
 | Platform   | Description                       |
 | ---------- | --------------------------------- |
 | `sensor`   | Show info from an FireflyIII API. |
-| `calendar` | Calendar for invoices             |
+| `calendar` | Calendar for bills                |
 
 ## Installation via HACS (recommended)
 

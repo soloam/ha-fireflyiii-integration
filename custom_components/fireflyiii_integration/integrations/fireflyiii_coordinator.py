@@ -1,39 +1,17 @@
 """FireflyIII Integration Coordinator"""
 
 import logging
-from asyncio import gather
 from calendar import monthrange
 from datetime import datetime, timedelta
 
 from datetimerange import DateTimeRange
 from homeassistant import config_entries
-from homeassistant.const import CONF_ACCESS_TOKEN, CONF_NAME, CONF_URL
+from homeassistant.const import WEEKDAYS
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from ..const import (
-    CONF_DATE_LASTX_BACK,
-    CONF_DATE_LASTX_BACK_TYPE,
-    CONF_DATE_LASTX_BACK_TYPES,
-    CONF_DATE_LASTX_DAYS_TYPE,
-    CONF_DATE_LASTX_WEEKS_TYPE,
-    CONF_DATE_LASTX_YEARS_TYPE,
-    CONF_DATE_MONTH_START,
-    CONF_DATE_WEEK_START,
-    CONF_DATE_YEAR_START,
-    CONF_RETURN_ACCOUNT_TYPE,
-    CONF_RETURN_ACCOUNTS,
-    CONF_RETURN_CATEGORIES,
-    CONF_RETURN_RANGE,
-    CONF_RETURN_RANGE_DAY_TYPE,
-    CONF_RETURN_RANGE_LASTX_TYPE,
-    CONF_RETURN_RANGE_MONTH_TYPE,
-    CONF_RETURN_RANGE_WEEK_TYPE,
-    CONF_RETURN_RANGE_YEAR_TYPE,
-    FIREFLYIII_ACCOUNT_SENSOR_TYPE,
-    FIREFLYIII_CATEGORY_SENSOR_TYPE,
-    WEEKDAYS,
-)
 from .fireflyiii import Fireflyiii
+from .fireflyiii_config import FireflyiiiConfig
+from .fireflyiii_objects import FireflyiiiObjectBaseList
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,13 +23,16 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         """Initialize."""
         self.interval = timedelta(seconds=interval)
         self._entry = entry
-        self.name = f"FireflyIII ({self.user_data.get(CONF_NAME)})"
         self._hass = hass
-        self._data = {}
+
+        self._user_data = FireflyiiiConfig(self._entry.data)
+        self._user_data.update(self._entry.options)
+
+        self.name = f"FireflyIII ({self.user_data.name})"
 
         self._api = Fireflyiii(
-            self.user_data.get(CONF_URL),
-            self.user_data.get(CONF_ACCESS_TOKEN),
+            self.user_data.host,
+            self.user_data.access_token,
             self.timerange,
         )
 
@@ -86,17 +67,16 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         return (date - timedelta(days=date.weekday())) + timedelta(days=weekday + 7)
 
     @property
-    def timerange(self) -> dict:
+    def timerange(self) -> DateTimeRange | None:
         """Return defined timerange"""
 
         timerange = None
 
-        if self.user_data.get(CONF_RETURN_RANGE) == CONF_RETURN_RANGE_YEAR_TYPE:
-            default = f"{datetime.today().year}-01-01"
-            year_start_date = self.user_data.get(CONF_DATE_YEAR_START, default)
+        if self.user_data.is_date_range_year:
+            year_start_date_str = self.user_data.year_start
 
             try:
-                year_start_date = datetime.strptime(year_start_date, "%Y-%m-%d")
+                year_start_date = datetime.strptime(year_start_date_str, "%Y-%m-%d")
             except ValueError:
                 year_start_date = datetime.today().replace(
                     year=datetime.today().year,
@@ -126,8 +106,8 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
 
             timerange = DateTimeRange(year_start_date, year_end_date)
 
-        elif self.user_data.get(CONF_RETURN_RANGE) == CONF_RETURN_RANGE_MONTH_TYPE:
-            month_start_day = int(self.user_data.get(CONF_DATE_MONTH_START, 1))
+        elif self.user_data.is_date_range_month:
+            month_start_day = self.user_data.month_start
 
             date_ref = self._set_day_bound(datetime.today(), month_start_day)
 
@@ -145,15 +125,15 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
                 )
 
             timerange = DateTimeRange(date_start, date_end)
-        elif self.user_data.get(CONF_RETURN_RANGE) == CONF_RETURN_RANGE_WEEK_TYPE:
-            week_start_day = self.user_data.get(CONF_DATE_WEEK_START, WEEKDAYS[0])
+        elif self.user_data.is_date_range_week:
+            week_start_day_str = self.user_data.week_start
 
             date_ref = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
 
             try:
-                week_start_day = WEEKDAYS.index(week_start_day)
+                week_start_day = WEEKDAYS.index(week_start_day_str)
             except ValueError:
                 week_start_day = 0
 
@@ -162,7 +142,7 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
             week_end_date = week_end_date - timedelta(microseconds=1)
 
             timerange = DateTimeRange(week_start_date, week_end_date)
-        elif self.user_data.get(CONF_RETURN_RANGE) == CONF_RETURN_RANGE_DAY_TYPE:
+        elif self.user_data.is_date_range_day:
             day_start_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
@@ -171,33 +151,28 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
             )
 
             timerange = DateTimeRange(day_start_date, day_end_date)
-        elif self.user_data.get(CONF_RETURN_RANGE) == CONF_RETURN_RANGE_LASTX_TYPE:
+        elif self.user_data.is_date_range_lastx:
             try:
-                lastx_number = self.user_data.get(CONF_DATE_LASTX_BACK, 1)
+                lastx_number = int(self.user_data.lastx_days.get("back", 1))
             except ValueError:
                 lastx_number = 1
 
-            lastx_type = self.user_data.get(
-                CONF_DATE_LASTX_BACK_TYPE, CONF_DATE_LASTX_BACK_TYPES[0]
-            )
+            keys_date = {"years": 0, "weeks": 0, "days": 0}
 
-            if lastx_type not in CONF_DATE_LASTX_BACK_TYPES:
-                lastx_type = CONF_DATE_LASTX_BACK_TYPES[0]
-
-            keys_date = {}
-
-            if lastx_type == CONF_DATE_LASTX_YEARS_TYPE:
-                keys_date["years"] = lastx_number
-            elif lastx_type == CONF_DATE_LASTX_WEEKS_TYPE:
+            if self.user_data.is_lastx_days_type_years:
+                keys_date["weeks"] = lastx_number * 52
+            elif self.user_data.is_lastx_days_type_weeks:
                 keys_date["weeks"] = lastx_number
-            elif lastx_type == CONF_DATE_LASTX_DAYS_TYPE:
+            elif self.user_data.is_lastx_days_type_days:
                 keys_date["days"] = lastx_number
 
             date_ref = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
 
-            lastx_start_date = date_ref - timedelta(**keys_date)
+            lastx_start_date = date_ref - timedelta(
+                days=keys_date["days"], weeks=keys_date["weeks"]
+            )
             lastx_end_date = date_ref.replace(
                 hour=23, minute=59, second=59, microsecond=59
             )
@@ -207,10 +182,12 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         if timerange:
             return timerange
 
+        return None
+
     @property
-    def user_data(self) -> dict:
+    def user_data(self) -> FireflyiiiConfig:
         """Return User input config flow data"""
-        return self._entry.data
+        return self._user_data
 
     @property
     def api(self) -> Fireflyiii:
@@ -218,44 +195,30 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         return self._api
 
     @property
-    def api_data(self) -> dict:
+    def api_data(self) -> FireflyiiiObjectBaseList:
         """Return API Returned data from coordinator"""
-        return self._data
-
-        # self.parse_sensors()
+        return self.data
 
     async def _async_update_data(self):
         """Run coordinator update"""
 
-        data = {}
-        data["about"] = self.api.about()
-        # if self._data["about"]:
-        #     self._data["version"] = self._data["about"]["version"]
-        #     self._data["os"] = self._data["about"]["os"]
+        data_list = FireflyiiiObjectBaseList()
 
-        data["start_year"] = self.api.start_year
+        data_list.update(self.api.about())
+        data_list.update(self.api.preferences())
 
-        if (
-            CONF_RETURN_ACCOUNTS in self.user_data
-            and self.user_data[CONF_RETURN_ACCOUNTS]
-        ):
-            data[FIREFLYIII_ACCOUNT_SENSOR_TYPE] = self.api.accounts(
-                types=self.user_data.get(CONF_RETURN_ACCOUNT_TYPE, [])
+        if self.user_data.get_accounts:
+            data_list.update(
+                self.api.accounts(
+                    types=self.user_data.account_types, ids=self.user_data.account_ids
+                )
             )
 
-        if (
-            CONF_RETURN_CATEGORIES in self.user_data
-            and self.user_data[CONF_RETURN_CATEGORIES]
-        ):
-            data[FIREFLYIII_CATEGORY_SENSOR_TYPE] = self.api.categories()
+        if self.user_data.get_categories:
+            data_list.update(self.api.categories(ids=self.user_data.categories_ids))
 
-        data["default_currency"] = self.api.default_currency
+        if self.user_data.get_bills:
+            data_list.update(self.api.bills())
 
-        results = await gather(*[res for res in data.values()])
-
-        data_keys = data.keys()
-
-        for inx, key in enumerate(data_keys):
-            data[key] = results[inx]
-
-        self._data = data
+        await data_list.gather()
+        return data_list

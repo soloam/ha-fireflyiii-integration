@@ -10,11 +10,11 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from .const import (
     COORDINATOR,
     DOMAIN,
-    FIREFLYIII_SENSOR_TYPES,
-    FIREFLYIII_SERVER_SENSOR_TYPE,
+    FIREFLYIII_SENSOR_DESCRIPTIONS,
     BinarySensorEntityDescription,
     FireflyiiiEntityBase,
 )
+from .integrations.fireflyiii_objects import FireflyiiiObjectType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,14 +33,14 @@ async def async_setup_entry(
     coordinator = config[COORDINATOR]
 
     sensors = [
-        FireflyiiiServer(
-            coordinator, FIREFLYIII_SENSOR_TYPES[FIREFLYIII_SERVER_SENSOR_TYPE]
+        FireflyiiiServerBinarySensorEntity(
+            coordinator, FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.SERVER]
         )
     ]
     async_add_entities(sensors, update_before_add=True)
 
 
-class FireflyiiiServer(FireflyiiiEntityBase, BinarySensorEntity):
+class FireflyiiiServerBinarySensorEntity(FireflyiiiEntityBase, BinarySensorEntity):
     """Firefly Server Sensors"""
 
     def __init__(

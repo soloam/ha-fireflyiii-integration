@@ -6,6 +6,10 @@ __pycache__/
 # VSCode
 .vscode
 
+# venv
+.venv
+.venv/*
+
 #Resources
 resources/*.psd
 

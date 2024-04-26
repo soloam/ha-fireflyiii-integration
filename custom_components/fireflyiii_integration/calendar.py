@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, List, Optional, cast
 
 from homeassistant import config_entries, core
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
@@ -13,11 +13,12 @@ from homeassistant.core import HomeAssistant
 from .const import (
     COORDINATOR,
     DOMAIN,
-    FIREFLYIII_INVOICES_SENSOR_TYPE,
-    FIREFLYIII_SENSOR_TYPES,
+    FIREFLYIII_SENSOR_DESCRIPTIONS,
     EntityDescription,
     FireflyiiiEntityBase,
 )
+from .integrations.fireflyiii_functions import get_hass_locale, output_money
+from .integrations.fireflyiii_objects import FireflyiiiBill, FireflyiiiObjectType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,34 +36,46 @@ async def async_setup_entry(
 
     coordinator = config[COORDINATOR]
 
-    invoices = []
-    if FIREFLYIII_INVOICES_SENSOR_TYPE in coordinator.api_data:
-        obj = FireflyiiiInvoices(
-            coordinator, FIREFLYIII_SENSOR_TYPES[FIREFLYIII_INVOICES_SENSOR_TYPE]
+    user_locale = get_hass_locale(hass)
+
+    bills = []
+    for bill_id in coordinator.api_data.bills:
+        obj = FireflyiiiBillCalendarEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
+            bill_id,
+            locale=user_locale,
         )
 
-        invoices.append(obj)
+        bills.append(obj)
 
     sensors = []
-    sensors.extend(invoices)
+    sensors.extend(bills)
     async_add_entities(sensors, update_before_add=True)
 
 
-class FireflyiiiInvoices(FireflyiiiEntityBase, CalendarEntity):
-    """Firefly Invoices Calendar"""
+class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
+    """Firefly Bills Calendar"""
+
+    _type = FireflyiiiObjectType.BILLS
 
     def __init__(
         self,
         coordinator,
-        entity_description: EntityDescription = None,
-        data: dict = None,
+        entity_description: Optional[EntityDescription] = None,
+        fireflyiii_id: Optional[int] = None,
+        locale: Optional[str] = None,
     ):
-        self._data = data if data else {}
-        super().__init__(coordinator, entity_description, self._data.get("id", 0))
+        super().__init__(coordinator, entity_description, fireflyiii_id, locale)
 
-        self._attr_supported_features = []
+        self._attr_translation_placeholders = {"bill_name": self.entity_data.name}
 
-        self._available = True
+        self._attr_supported_features: List[str] = []
+
+    @property
+    def entity_data(self) -> FireflyiiiBill:
+        """Returns entity data - overide to Type Hints"""
+        return cast(FireflyiiiBill, super().entity_data)
 
     async def async_create_event(self, **kwargs: Any) -> None:
         pass
@@ -87,13 +100,52 @@ class FireflyiiiInvoices(FireflyiiiEntityBase, CalendarEntity):
     @property
     def event(self) -> CalendarEvent | None:
         """Return the next upcoming event."""
+
+        events = self.fireflyiii_events(get_pay=True, get_paied=False)
+        if events:
+            return events[0]
+
         return None
+
+    def fireflyiii_events(
+        self, get_pay: Optional[bool] = True, get_paied: Optional[bool] = True
+    ) -> List[CalendarEvent]:
+        """Returns FireflyIII Events"""
+        events = []
+
+        if get_pay:
+            for pay in self.entity_data.pay:
+                start = pay.date.replace(hour=0, minute=0, second=0, microsecond=0)
+                end = start + timedelta(hours=24)
+
+                event = CalendarEvent(
+                    summary=f"{self.entity_data.name} {output_money(self.entity_data.value,self.entity_data.currency,self.locale)}",
+                    start=start.date(),
+                    end=end.date(),
+                )
+                events.append(event)
+
+        if get_paied:
+            for paid in self.entity_data.paid:
+                start = paid.date.replace(hour=0, minute=0, second=0, microsecond=0)
+                end = start + timedelta(hours=24)
+
+                event = CalendarEvent(
+                    summary=f"✓ {self.entity_data.name} {output_money(paid.value,paid.currency,self.locale)}",
+                    start=start.date(),
+                    end=end.date(),
+                )
+                events.append(event)
+
+        events.sort(key=lambda x: x.start, reverse=False)
+        return events
 
     async def async_get_events(
         self,
         hass: HomeAssistant,
-        start_date: datetime.datetime,
-        end_date: datetime.datetime,
+        start_date: datetime,
+        end_date: datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
-        return []
+
+        return self.fireflyiii_events()
