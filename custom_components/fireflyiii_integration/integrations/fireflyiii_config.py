@@ -340,7 +340,7 @@ class FireflyiiiConfigSchema:
         """Config flow currency field"""
         return {
             vol.Required(
-                CONF_RETURN_CURRENCY, default=cls.data_source().currency
+                CONF_RETURN_CURRENCY, default=str(cls.data_source().currency)
             ): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     multiple=False,

@@ -19,6 +19,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .integrations.fireflyiii_config import FireflyiiiConfig
+from .integrations.fireflyiii_coordinator import FireflyiiiCoordinator
 from .integrations.fireflyiii_objects import FireflyiiiObjectBase, FireflyiiiObjectType
 
 DOMAIN = "fireflyiii_integration"
@@ -74,7 +75,7 @@ FIREFLYIII_SENSOR_DESCRIPTIONS: Final[dict[str, SensorEntityDescription]] = {
     ),
     FireflyiiiObjectType.PIGGY_BANKS: SensorEntityDescription(
         key=FireflyiiiObjectType.PIGGY_BANKS,
-        name="Piggy Bank",
+        translation_key=FireflyiiiObjectType.PIGGY_BANKS,
         icon="mdi:piggy-bank-outline",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,
@@ -100,7 +101,7 @@ class FireflyiiiEntityBase(CoordinatorEntity):
 
     def __init__(
         self,
-        coordinator,
+        coordinator: FireflyiiiCoordinator,
         entity_description: EntityDescription = None,
         fireflyiii_id=0,
         locale: Optional[str] = None,

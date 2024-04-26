@@ -79,7 +79,7 @@ class FireflyiiiObjectBaseList(UserDict):
     """FireflyIII Special Object Holder Lists items by type"""
 
     _coroutines: Optional[List[Coroutine]] = None
-    _lockedtype: Optional[FireflyiiiObjectType] = None
+    _listtype: Optional[FireflyiiiObjectType] = None
 
     # pylint: disable=redefined-builtin
     def __init__(
@@ -88,32 +88,37 @@ class FireflyiiiObjectBaseList(UserDict):
         type: Optional[FireflyiiiObjectType] = None,
     ):
         super().__init__(cast(UserDict, dict))
-        self._lockedtype = type
+        self._listtype = type
 
     def values(self):
         "D.values() -> an object providing a view on D's values"
-        if self._lockedtype:
-            return ValuesView(self[self._lockedtype])
+        if self._listtype:
+            return ValuesView(self[self._listtype])
         else:
             return ValuesView(self)
+
+    @property
+    def list_type(self) -> Optional[FireflyiiiObjectType]:
+        """Get List Type"""
+        return self._listtype
 
     def items(self):
         "D.items() -> a set-like object providing a view on D's items"
 
-        if self._lockedtype:
-            return ItemsView(self[self._lockedtype])
+        if self._listtype:
+            return ItemsView(self[self._listtype])
         else:
             return super().items()
 
     def __iter__(self):
-        if self._lockedtype:
-            return iter(self.data[self._lockedtype])
+        if self._listtype:
+            return iter(self.data[self._listtype])
         else:
             return iter(self.data)
 
     def __getitem__(self, key: str) -> FireflyiiiObjectBase:
-        if self._lockedtype and key in self.data[self._lockedtype]:
-            return self.data[self._lockedtype].__getitem__(key)
+        if self._listtype and key in self.data[self._listtype]:
+            return self.data[self._listtype].__getitem__(key)
 
         return super().__getitem__(key)
 
@@ -141,8 +146,8 @@ class FireflyiiiObjectBaseList(UserDict):
 
         key = str(key)
 
-        if self._lockedtype and key not in FireflyiiiObjectType:
-            ret_type = self.data.get(self._lockedtype)
+        if self._listtype and key not in FireflyiiiObjectType:
+            ret_type = self.data.get(self._listtype)
             if ret_type and key in ret_type:
                 ret = ret_type.get(key)
         elif key in FireflyiiiObjectType:
@@ -221,6 +226,9 @@ class FireflyiiiObjectBaseList(UserDict):
             obj, FireflyiiiObjectBaseList
         ):  # If its a Base List Loop and add it
             for tp, ob in obj.items():
+                if obj.list_type:
+                    tp = obj.list_type
+
                 if isinstance(
                     ob, FireflyiiiObjectBase
                 ):  # If the objetct is from base it's a item without id, add it
@@ -250,6 +258,28 @@ class FireflyiiiObjectBaseList(UserDict):
 
 
 @dataclass
+class FireflyiiiCurrency(FireflyiiiObjectBaseId):
+    """FireflyIII Currencies Data Agregation"""
+
+    _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.CURRENCIES
+
+    name: str
+    code: str
+    symbol: str = ""
+    enabled: bool = True
+    default: bool = False
+    decimal_places: int = 2
+
+    def __str__(self) -> str:
+        return self.code
+
+    @classmethod
+    def empty(cls) -> "FireflyiiiCurrency":
+        """Returns empty Currency"""
+        return FireflyiiiCurrency(id="0", name="", code="")
+
+
+@dataclass
 class FireflyiiiAbout(FireflyiiiObjectBase):
     """FireflyIII About Data Agregation"""
 
@@ -265,7 +295,7 @@ class FireflyiiiPreferences(FireflyiiiObjectBase):
 
     _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.PREFERENCES
 
-    default_currency: str = ""
+    default_currency: Optional[FireflyiiiCurrency] = None
     year_start: str = ""
 
 
@@ -277,7 +307,7 @@ class FireflyiiiAccount(FireflyiiiObjectBaseId):
 
     name: str
     type: str
-    currency: str
+    currency: FireflyiiiCurrency
     balance: float = 0
     balance_beginning: float = 0
     iban: str = ""
@@ -291,7 +321,7 @@ class FireflyiiiCategory(FireflyiiiObjectBaseId):
     _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.CATEGORIES
 
     name: str
-    currency: str
+    currency: FireflyiiiCurrency
     balance: Optional[float] = 0
     spent: float = 0
     earned: float = 0
@@ -306,7 +336,7 @@ class FireflyiiiTransaction(FireflyiiiObjectBaseId):
 
     description: str
     value: float
-    currency: str
+    currency: FireflyiiiCurrency
     date: datetime
     from_account: Optional[FireflyiiiAccount] = None
     to_account: Optional[FireflyiiiAccount] = None
@@ -322,7 +352,7 @@ class FireflyiiiBill(FireflyiiiObjectBaseId):
     name: str
     value_min: float
     value_max: float
-    currency: str
+    currency: FireflyiiiCurrency
     paid: List["FireflyiiiBillPayment"] = field(default_factory=list)
     pay: List["FireflyiiiBillPayment"] = field(default_factory=list)
 
@@ -344,20 +374,6 @@ class FireflyiiiBill(FireflyiiiObjectBaseId):
 
 
 @dataclass
-class FireflyiiiCurrency(FireflyiiiObjectBaseId):
-    """FireflyIII Currencies Data Agregation"""
-
-    _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.CURRENCIES
-
-    name: str
-    code: str
-    symbol: str = ""
-    enabled: bool = True
-    default: bool = False
-    decimal_places: int = 2
-
-
-@dataclass
 class FireflyiiiBillPayment:
     """FireflyIII Bill Payment Data Agregation"""
 
@@ -375,10 +391,29 @@ class FireflyiiiBillPayment:
             return 0
 
     @property
-    def currency(self) -> str:
+    def currency(self) -> FireflyiiiCurrency:
         """Reurns Payment Currency"""
 
         if self.transaction:
             return self.transaction.currency
         else:
-            return ""
+            return FireflyiiiCurrency.empty()
+
+
+@dataclass
+class FireflyiiiPiggyBank(FireflyiiiObjectBaseId):
+    """FireflyIII Preferences Data Agregation"""
+
+    _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.PIGGY_BANKS
+
+    def __post_init__(self):
+        if not self.currency and isinstance(self.account, FireflyiiiAccount):
+            self.currency = self.account.currency
+
+    name: str
+    account: FireflyiiiAccount
+    target_amount: float = 0
+    percentage: float = 0
+    current_amount: float = 0
+    left_to_save: float = 0
+    currency: Optional[FireflyiiiCurrency] = None

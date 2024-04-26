@@ -1,6 +1,7 @@
 """FireflyIII Integration API Access Class"""
 
 import json
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -18,6 +19,7 @@ from .fireflyiii_objects import (
     FireflyiiiCurrency,
     FireflyiiiObjectBaseList,
     FireflyiiiObjectType,
+    FireflyiiiPiggyBank,
     FireflyiiiPreferences,
     FireflyiiiTransaction,
 )
@@ -72,16 +74,27 @@ class Fireflyiii:
         return self.host + self._api
 
     @property
-    async def default_currency(self) -> str:
+    async def default_currency(self) -> FireflyiiiCurrency:
         """Get FireflyIII Default Currency"""
         default_currency = await self._request_api("GET", "/currencies/default")
         if not "data" in default_currency:
-            return ""
+            return FireflyiiiCurrency.empty()
 
         if not "attributes" in default_currency["data"]:
-            return ""
+            return FireflyiiiCurrency.empty()
 
-        return default_currency["data"]["attributes"].get("code", "")
+        attributes = default_currency["data"].get("attributes", {})
+
+        default_currency = FireflyiiiCurrency(
+            id=attributes.get("id", ""),
+            name=attributes.get("name", ""),
+            code=attributes.get("code", ""),
+            symbol=attributes.get("symbol", ""),
+            enabled=attributes.get("enabled", True),
+            decimal_places=attributes.get("decimal_places", 2),
+        )
+
+        return default_currency
 
     @property
     async def start_year(self) -> str:
@@ -155,9 +168,11 @@ class Fireflyiii:
         self, types: Optional[List[str]] = None, ids: Optional[List[str]] = None
     ) -> FireflyiiiObjectBaseList:
         """Get FireflyIII Accounts"""
+        account_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.ACCOUNTS)
+
         accounts = await self._request_api("GET", "/accounts")
         if not "data" in accounts:
-            return FireflyiiiObjectBaseList()
+            return account_list
 
         # // Get Account State at the end of the timerange
         date_range = {}
@@ -177,8 +192,6 @@ class Fireflyiii:
                 datetime.today() - timedelta(hours=24)
             ).strftime("%Y-%m-%d")
             date_range["end_state"] = datetime.today().strftime("%Y-%m-%d")
-
-        account_list = FireflyiiiObjectBaseList()
 
         for account in accounts["data"]:
             account_id = account.get("id", 0)
@@ -397,25 +410,96 @@ class Fireflyiii:
 
         return currency_list
 
-    async def bills(self, ids=None) -> FireflyiiiObjectBaseList:
+    async def piggy_banks(self, ids=None) -> FireflyiiiObjectBaseList:
+        """Get FireflyIII currencies"""
+
+        piggy_bank_list = FireflyiiiObjectBaseList(
+            type=FireflyiiiObjectType.PIGGY_BANKS
+        )
+
+        piggy_banks = await self._request_api("GET", "/piggy-banks")
+        if not "data" in piggy_banks:
+            return piggy_bank_list
+
+        for piggy_bank in piggy_banks["data"]:
+            piggy_bank_id = piggy_bank.get("id", 0)
+            if piggy_bank_id == 0:
+                continue
+
+            if ids and piggy_bank_id not in ids:
+                continue
+
+            attributes = piggy_bank.get("attributes")
+            if not attributes:
+                continue
+
+            account_id = attributes.get("account_id", None)
+            if not account_id:
+                continue
+
+            piggy_account_list = await self.accounts(ids=[account_id])
+            if not piggy_account_list:
+                continue
+
+            account_id = next(iter(piggy_account_list))
+            piggy_account = piggy_account_list.get(account_id, None)
+
+            if not isinstance(piggy_account, FireflyiiiAccount):
+                continue
+
+            piggy_bank_obj = FireflyiiiPiggyBank(
+                id=attributes.get("id", piggy_bank_id),
+                name=attributes.get("name", ""),
+                account=piggy_account,
+                target_amount=attributes.get("target_amount", 0),
+                percentage=attributes.get("percentage", 0),
+                current_amount=attributes.get("current_amount", 0),
+                left_to_save=attributes.get("left_to_save", 0),
+                currency=None,  # Get from account
+            )
+
+            piggy_bank_list.update(piggy_bank_obj)
+
+        return piggy_bank_list
+
+    async def bills(
+        self, ids=None, timerange: Optional[DateTimeRange] = None
+    ) -> FireflyiiiObjectBaseList:
         """Get FireflyIII bills"""
+
+        get_timerange: Optional[DateTimeRange] = None
+
+        if timerange:
+            get_timerange = timerange
+        elif self._timerange:
+            # The bills object is special, it uses de time of the range up and down
+            # to pull the bills
+            get_timerange = deepcopy(self._timerange)
+            delta = self._timerange.get_timedelta_second()
+            end_date = self._timerange.end_datetime
+            if end_date:
+                end_date = end_date + timedelta(seconds=delta)
+                end_date = end_date.replace(
+                    hour=23, minute=59, second=59, microsecond=59
+                )
+                get_timerange.set_end_datetime(end_date)
 
         date_range = {}
         if (
-            self._timerange
-            and self._timerange.start_datetime
-            and self._timerange.end_datetime
+            get_timerange
+            and get_timerange.start_datetime
+            and get_timerange.end_datetime
         ):
             date_range = {
-                "start": self._timerange.start_datetime.strftime("%Y-%m-%d"),
-                "end": self._timerange.end_datetime.strftime("%Y-%m-%d"),
+                "start": get_timerange.start_datetime.strftime("%Y-%m-%d"),
+                "end": get_timerange.end_datetime.strftime("%Y-%m-%d"),
             }
+
+        bill_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.BILLS)
 
         bills = await self._request_api("GET", "/bills", date_range)
         if not "data" in bills:
-            return FireflyiiiObjectBaseList()
-
-        bill_list = FireflyiiiObjectBaseList()
+            return bill_list
 
         for bill in bills["data"]:
             bill_id = bill.get("id", 0)

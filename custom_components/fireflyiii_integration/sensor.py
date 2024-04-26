@@ -22,6 +22,7 @@ from .integrations.fireflyiii_objects import (
     FireflyiiiAccount,
     FireflyiiiCategory,
     FireflyiiiObjectType,
+    FireflyiiiPiggyBank,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +63,16 @@ async def async_setup_entry(
 
         categories.append(obj)
 
+    piggybank = []
+    for piggybank_id in coordinator.api_data.piggy_banks:
+        obj = FireflyiiiPiggyBankSensorEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.PIGGY_BANKS],
+            piggybank_id,
+        )
+
+        piggybank.append(obj)
+
     budgets = []
     if FireflyiiiObjectType.BUDGETS in coordinator.api_data:
         obj = FireflyiiiBudgetSensorEntity(
@@ -69,15 +80,6 @@ async def async_setup_entry(
         )
 
         budgets.append(obj)
-
-    piggybank = []
-    if FireflyiiiObjectType.PIGGY_BANKS in coordinator.api_data:
-        obj = FireflyiiiPiggyBankSensorEntity(
-            coordinator,
-            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.PIGGY_BANKS],
-        )
-
-        piggybank.append(obj)
 
     sensors = []
     sensors.extend(accounts)
@@ -133,7 +135,7 @@ class FireflyiiiAccountSensorEntity(FireflyiiiEntityBase, SensorEntity):
         if not currency_code:
             currency_code = self.coordinator.api_data.defaults.currency
 
-        return currency_code
+        return str(currency_code)
 
     @property
     def account_type(self) -> str:
@@ -171,7 +173,7 @@ class FireflyiiiCategorySensorEntity(FireflyiiiEntityBase, SensorEntity):
     @property
     def native_unit_of_measurement(self) -> str:
         currency_code = self.entity_data.currency
-        return currency_code if currency_code else ""
+        return str(currency_code) if currency_code else ""
 
     @property
     def native_value(self) -> float:
@@ -187,27 +189,79 @@ class FireflyiiiCategorySensorEntity(FireflyiiiEntityBase, SensorEntity):
         return current_balance
 
 
-class FireflyiiiBudgetSensorEntity(FireflyiiiEntityBase, SensorEntity):
-    """Firefly Budget Sensor"""
+class FireflyiiiPiggyBankSensorEntity(FireflyiiiEntityBase, SensorEntity):
+    """Firefly PiggyBank Sensor"""
 
-    _type = FireflyiiiObjectType.BUDGETS
+    _type = FireflyiiiObjectType.PIGGY_BANKS
+
+    _attr_sources = [
+        "percentage",
+        "target_amount",
+        "left_to_save",
+        "account_name",
+        "account_id",
+    ]
 
     def __init__(
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        data: Optional[dict] = None,
+        fireflyiii_id: Optional[int] = None,
     ):
-        self._data = data if data else {}
-        super().__init__(coordinator, entity_description, self._data.get("id", 0))
+        super().__init__(coordinator, entity_description, fireflyiii_id)
 
-        self._state = None
+        self._attr_translation_placeholders = {"piggy_bank_name": self.entity_data.name}
+
+    @property
+    def entity_data(self) -> FireflyiiiPiggyBank:
+        """Returns entity data - overide to Type Hints"""
+        return cast(FireflyiiiPiggyBank, super().entity_data)
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        currency_code = self.entity_data.currency
+        return str(currency_code) if currency_code else ""
+
+    @property
+    def native_value(self) -> float:
+        """Return the state of the sensor."""
+
+        return self.entity_data.current_amount
+
+    @property
+    def percentage(self) -> float:
+        """Return percentage saved"""
+        return self.entity_data.percentage
+
+    @property
+    def target_amount(self) -> float:
+        """Return Target amount"""
+        return self.entity_data.target_amount
+
+    @property
+    def left_to_save(self) -> float:
+        """Return amount left to save"""
+        return self.entity_data.left_to_save
+
+    @property
+    def account_name(self) -> str:
+        """Returns account name"""
+        if not self.entity_data.account:
+            return ""
+        return self.entity_data.account.name
+
+    @property
+    def account_id(self) -> str:
+        """Returns account name"""
+        if not self.entity_data.account:
+            return ""
+        return self.entity_data.account.id
 
 
-class FireflyiiiPiggyBankSensorEntity(FireflyiiiEntityBase, SensorEntity):
-    """Firefly PiggyBank Sensor"""
+class FireflyiiiBudgetSensorEntity(FireflyiiiEntityBase, SensorEntity):
+    """Firefly Budget Sensor"""
 
-    _type = FireflyiiiObjectType.PIGGY_BANKS
+    _type = FireflyiiiObjectType.BUDGETS
 
     def __init__(
         self,

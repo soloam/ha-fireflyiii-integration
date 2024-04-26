@@ -220,5 +220,8 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         if self.user_data.get_bills:
             data_list.update(self.api.bills())
 
+        if self.user_data.get_piggy_banks:
+            data_list.update(self.api.piggy_banks())
+
         await data_list.gather()
         return data_list

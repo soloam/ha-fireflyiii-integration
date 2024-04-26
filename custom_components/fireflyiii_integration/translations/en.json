@@ -44,7 +44,7 @@
   "entity": {
     "calendar": {
       "bills": {
-        "name": "Bills {bill_name}",
+        "name": "{bill_name} Bills",
         "state_attributes": {
           "fireflyiii_id": {
             "name": "FireflyIII id"
@@ -60,7 +60,7 @@
     },
     "sensor": {
       "account_asset": {
-        "name": "Asset account {account_name}",
+        "name": "{account_name} Asset account",
         "state_attributes": {
           "fireflyiii_id": {
             "name": "FireflyIII id"
@@ -80,19 +80,19 @@
         }
       },
       "account_expense": {
-        "name": "Expense account {account_name}"
+        "name": "{account_name} Expense account"
       },
       "account_revenue": {
-        "name": "Revenue account {account_name}"
+        "name": "{account_name} Revenue account"
       },
       "account_liabiliti": {
-        "name": "Liabiliti account {account_name}"
+        "name": "{account_name} Liabiliti account}"
       },
       "account_cash": {
         "name": "Cash account"
       },
       "categories": {
-        "name": "Category {category_name}",
+        "name": "{category_name} Category",
         "state_attributes": {
           "fireflyiii_id": {
             "name": "FireflyIII id"
@@ -102,6 +102,35 @@
             "state": {
               "categories": "Category"
             }
+          }
+        }
+      },
+      "piggy_banks": {
+        "name": "{piggy_bank_name} Piggy Bank",
+        "state_attributes": {
+          "fireflyiii_id": {
+            "name": "FireflyIII id"
+          },
+          "fireflyiii_type": {
+            "name": "FireflyIII type",
+            "state": {
+              "piggy_banks": "Piggy Bank"
+            }
+          },
+          "percentage": {
+            "name": "Saved percentage"
+          },
+          "target_amount": {
+            "name": "Target amount"
+          },
+          "left_to_save": {
+            "name": "Left to save"
+          },
+          "account_name": {
+            "name": "Account name"
+          },
+          "account_id": {
+            "name": "Account id"
           }
         }
       }
