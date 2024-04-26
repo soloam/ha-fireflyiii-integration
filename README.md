@@ -9,7 +9,7 @@
 - [x] Config Flow \*
 - [x] Categories
 - [x] Accounts
-- [ ] Bills in calendar
+- [x] Bills in calendar
 - [ ] Import Piggy Banks
 - [ ] Services
 - [ ] Auto create Webhooks in FireflyIII
