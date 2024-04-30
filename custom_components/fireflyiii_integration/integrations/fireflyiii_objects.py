@@ -64,11 +64,6 @@ class FireflyiiiObjectBase:
 
 
 @dataclass
-class FireflyiiiObjectEmpty(FireflyiiiObjectBase):
-    """Empty Container"""
-
-
-@dataclass
 class FireflyiiiObjectBaseId(FireflyiiiObjectBase):
     """FireflyIII Object Base For Items With Id"""
 
@@ -133,7 +128,7 @@ class FireflyiiiObjectBaseList(UserDict):
         if (
             attr in FireflyiiiObjectType
         ):  # If it's a valid type we send a empty dic to avoid errors
-            return FireflyiiiObjectEmpty()
+            return {}
 
         raise AttributeError(
             f"'FireflyiiiObjectBaseList' object has no attribute '{attr}'"

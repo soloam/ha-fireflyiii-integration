@@ -95,7 +95,7 @@ class FireflyiiiAccountSensorEntity(FireflyiiiEntityBase, SensorEntity):
 
     _type = FireflyiiiObjectType.ACCOUNTS
 
-    _attr_sources = ["account_type"]
+    _attr_sources = ["account_type", "balance_beginning", "balance_difference"]
 
     def __init__(
         self,
@@ -146,6 +146,16 @@ class FireflyiiiAccountSensorEntity(FireflyiiiEntityBase, SensorEntity):
     def native_value(self) -> float:
         """Return the state of the sensor."""
         return self.entity_data.balance
+
+    @property
+    def balance_beginning(self) -> float:
+        """Balance at the beginning of the time range"""
+        return self.entity_data.balance_beginning
+
+    @property
+    def balance_difference(self) -> float:
+        """Balance difference"""
+        return self.entity_data.balance - self.entity_data.balance_beginning
 
 
 class FireflyiiiCategorySensorEntity(FireflyiiiEntityBase, SensorEntity):
