@@ -11,7 +11,7 @@
 - [x] Accounts
 - [x] Bills in calendar
 - [x] Import Piggy Banks
-- [ ] Import Budgets
+- [x] Import Budgets
 - [ ] Services
 - [ ] Add to HACS
 

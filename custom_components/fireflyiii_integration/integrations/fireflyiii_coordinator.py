@@ -223,5 +223,8 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         if self.user_data.get_piggy_banks:
             data_list.update(self.api.piggy_banks())
 
+        if self.user_data.get_budgets:
+            data_list.update(self.api.budgets())
+
         await data_list.gather()
         return data_list

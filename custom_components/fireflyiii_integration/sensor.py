@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional, cast
 
 from homeassistant import config_entries, core
@@ -20,6 +20,7 @@ from .const import (
 )
 from .integrations.fireflyiii_objects import (
     FireflyiiiAccount,
+    FireflyiiiBudget,
     FireflyiiiCategory,
     FireflyiiiObjectType,
     FireflyiiiPiggyBank,
@@ -74,9 +75,11 @@ async def async_setup_entry(
         piggybank.append(obj)
 
     budgets = []
-    if FireflyiiiObjectType.BUDGETS in coordinator.api_data:
+    for budget_id in coordinator.api_data.budgets:
         obj = FireflyiiiBudgetSensorEntity(
-            coordinator, FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BUDGETS]
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BUDGETS],
+            budget_id,
         )
 
         budgets.append(obj)
@@ -273,13 +276,48 @@ class FireflyiiiBudgetSensorEntity(FireflyiiiEntityBase, SensorEntity):
 
     _type = FireflyiiiObjectType.BUDGETS
 
+    _attr_sources = ["limit", "limit_start", "limit_end"]
+
     def __init__(
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        data: Optional[dict] = None,
+        fireflyiii_id: Optional[int] = None,
     ):
-        self._data = data if data else {}
-        super().__init__(coordinator, entity_description, self._data.get("id", 0))
+        super().__init__(coordinator, entity_description, fireflyiii_id)
 
-        self._state = None
+        self._attr_translation_placeholders = {"budget_name": self.entity_data.name}
+
+    @property
+    def entity_data(self) -> FireflyiiiBudget:
+        """Returns entity data - overide to Type Hints"""
+        return cast(FireflyiiiBudget, super().entity_data)
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        currency_code = self.entity_data.currency
+        return str(currency_code) if currency_code else ""
+
+    @property
+    def native_value(self) -> float:
+        """Return the state of the sensor."""
+
+        return self.entity_data.spent
+
+    @property
+    def limit(self) -> float:
+        """Return the budget limit"""
+
+        return self.entity_data.limit
+
+    @property
+    def limit_start(self) -> Optional[datetime]:
+        """Return the budget limit start date"""
+
+        return self.entity_data.limit_start
+
+    @property
+    def limit_end(self) -> Optional[datetime]:
+        """Return the budget limit end date"""
+
+        return self.entity_data.limit_end

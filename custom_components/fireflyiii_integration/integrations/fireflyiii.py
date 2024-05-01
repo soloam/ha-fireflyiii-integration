@@ -15,6 +15,7 @@ from .fireflyiii_objects import (
     FireflyiiiAccount,
     FireflyiiiBill,
     FireflyiiiBillPayment,
+    FireflyiiiBudget,
     FireflyiiiCategory,
     FireflyiiiCurrency,
     FireflyiiiObjectBaseList,
@@ -336,7 +337,7 @@ class Fireflyiii:
                 spent_currency = sum(
                     float(s.get("sum", 0))
                     for s in spent_get
-                    if s.get("currency_code", "") == get_currency
+                    if s.get("currency_code", "") == str(get_currency)
                 )
             except ValueError:
                 spent_currency = 0
@@ -345,7 +346,7 @@ class Fireflyiii:
                 earned_currency = sum(
                     float(s.get("sum", 0))
                     for s in earned_get
-                    if s.get("currency_code", "") == get_currency
+                    if s.get("currency_code", "") == str(get_currency)
                 )
             except ValueError:
                 earned_currency = 0
@@ -411,7 +412,7 @@ class Fireflyiii:
         return currency_list
 
     async def piggy_banks(self, ids=None) -> FireflyiiiObjectBaseList:
-        """Get FireflyIII currencies"""
+        """Get FireflyIII Piggy Banks"""
 
         piggy_bank_list = FireflyiiiObjectBaseList(
             type=FireflyiiiObjectType.PIGGY_BANKS
@@ -461,6 +462,83 @@ class Fireflyiii:
             piggy_bank_list.update(piggy_bank_obj)
 
         return piggy_bank_list
+
+    async def budgets(self, ids=None, currency=None) -> FireflyiiiObjectBaseList:
+        """Get FireflyIII Budgets"""
+
+        budgets_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.BUDGETS)
+
+        date_range = {}
+        if (
+            self._timerange
+            and self._timerange.start_datetime
+            and self._timerange.end_datetime
+        ):
+            date_range = {
+                "start": self._timerange.start_datetime.strftime("%Y-%m-%d"),
+                "end": self._timerange.end_datetime.strftime("%Y-%m-%d"),
+            }
+
+        budgets = await self._request_api("GET", "/budgets", date_range)
+        if not "data" in budgets:
+            return budgets_list
+
+        for budget in budgets["data"]:
+            budget_id = budget.get("id", 0)
+            if budget_id == 0:
+                continue
+
+            if ids and budget_id not in ids:
+                continue
+
+            attributes = budget.get("attributes")
+            if not attributes:
+                continue
+
+            budget_limits = await self._request_api(
+                "GET", f"/budgets/{budget_id}/limits", date_range
+            )
+            if not "data" in budget_limits or len(budget_limits["data"]) < 1:
+                budget_limits = None
+            else:
+                budget_limit = budget_limits["data"][0]
+
+            limit_attributes = budget_limit.get("attributes", {})
+
+            try:
+                start_limit = datetime.fromisoformat(limit_attributes.get("start"))
+                end_limit = datetime.fromisoformat(limit_attributes.get("end"))
+            except ValueError:
+                start_limit = None
+                end_limit = None
+
+            if currency:
+                get_currency = currency
+            else:
+                get_currency = await self.default_currency
+
+            try:
+                spent_currency = sum(
+                    float(s.get("sum", 0))
+                    for s in attributes["spent"]
+                    if s.get("currency_code", "") == str(get_currency)
+                )
+            except ValueError:
+                spent_currency = 0
+
+            budget_obj = FireflyiiiBudget(
+                id=attributes.get("id", budget_id),
+                name=attributes.get("name", ""),
+                spent=spent_currency,
+                currency=get_currency,
+                limit=limit_attributes.get("amount", 0),
+                limit_start=start_limit,
+                limit_end=end_limit,
+            )
+
+            budgets_list.update(budget_obj)
+
+        return budgets_list
 
     async def bills(
         self, ids=None, timerange: Optional[DateTimeRange] = None

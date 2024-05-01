@@ -67,7 +67,7 @@ FIREFLYIII_SENSOR_DESCRIPTIONS: Final[dict[str, SensorEntityDescription]] = {
     ),
     FireflyiiiObjectType.BUDGETS: SensorEntityDescription(
         key=FireflyiiiObjectType.BUDGETS,
-        name="Budget",
+        translation_key=FireflyiiiObjectType.BUDGETS,
         icon="mdi:calculator",
         device_class=SensorDeviceClass.MONETARY,
         state_class=SensorStateClass.TOTAL,

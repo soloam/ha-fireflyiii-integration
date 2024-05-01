@@ -105,6 +105,29 @@
           }
         }
       },
+      "budgets": {
+        "name": "{budget_name} Budget",
+        "state_attributes": {
+          "fireflyiii_id": {
+            "name": "FireflyIII id"
+          },
+          "fireflyiii_type": {
+            "name": "FireflyIII type",
+            "state": {
+              "budgets": "Budget"
+            }
+          },
+          "limit": {
+            "name": "Budget limit"
+          },
+          "limit_start": {
+            "name": "Budget limit start"
+          },
+          "limit_end": {
+            "name": "Budget limit end"
+          }
+        }
+      },
       "piggy_banks": {
         "name": "{piggy_bank_name} Piggy Bank",
         "state_attributes": {

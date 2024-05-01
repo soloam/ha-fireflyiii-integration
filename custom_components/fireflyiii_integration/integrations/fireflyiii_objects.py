@@ -397,7 +397,7 @@ class FireflyiiiBillPayment:
 
 @dataclass
 class FireflyiiiPiggyBank(FireflyiiiObjectBaseId):
-    """FireflyIII Preferences Data Agregation"""
+    """FireflyIII Piggy Bank Data Agregation"""
 
     _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.PIGGY_BANKS
 
@@ -412,3 +412,17 @@ class FireflyiiiPiggyBank(FireflyiiiObjectBaseId):
     current_amount: float = 0
     left_to_save: float = 0
     currency: Optional[FireflyiiiCurrency] = None
+
+
+@dataclass
+class FireflyiiiBudget(FireflyiiiObjectBaseId):
+    """FireflyIII Budget Data Agregation"""
+
+    _objtype: ClassVar[FireflyiiiObjectType] = FireflyiiiObjectType.BUDGETS
+
+    name: str
+    spent: float
+    currency: FireflyiiiCurrency
+    limit: float = 0
+    limit_start: Optional[datetime] = None
+    limit_end: Optional[datetime] = None
