@@ -51,7 +51,6 @@ async def async_setup_entry(
     obj = FireflyiiiBillCalendarEntity(
         coordinator,
         FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
-        None,
         locale=user_locale,
     )
 
@@ -71,10 +70,9 @@ class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
         self,
         coordinator,
         entity_description: Optional[EntityDescription] = None,
-        fireflyiii_id: Optional[str] = None,
         locale: Optional[str] = None,
     ):
-        super().__init__(coordinator, entity_description, fireflyiii_id, locale)
+        super().__init__(coordinator, entity_description, None, locale)
 
         self._attr_supported_features: List[str] = []
 
@@ -172,8 +170,6 @@ class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
 
         timerange = dates_to_range(start_date, end_date)
 
-        bills = await coordinator.api.bills(
-            ids=[self.fireflyiii_id], timerange=timerange
-        )
+        bills = await coordinator.api.bills(timerange=timerange)
 
         return self.fireflyiii_events(bills)
