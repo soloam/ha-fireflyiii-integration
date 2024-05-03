@@ -23,7 +23,11 @@ from .integrations.fireflyiii_functions import (
     get_hass_locale,
     output_money,
 )
-from .integrations.fireflyiii_objects import FireflyiiiBill, FireflyiiiObjectType
+from .integrations.fireflyiii_objects import (
+    FireflyiiiBill,
+    FireflyiiiObjectBaseList,
+    FireflyiiiObjectType,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,19 +48,18 @@ async def async_setup_entry(
     user_locale = get_hass_locale(hass)
 
     bills = []
-    for bill_id in coordinator.api_data.bills:
-        obj = FireflyiiiBillCalendarEntity(
-            coordinator,
-            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
-            bill_id,
-            locale=user_locale,
-        )
+    obj = FireflyiiiBillCalendarEntity(
+        coordinator,
+        FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
+        None,
+        locale=user_locale,
+    )
 
-        bills.append(obj)
+    bills.append(obj)
 
-    sensors = []
-    sensors.extend(bills)
-    async_add_entities(sensors, update_before_add=True)
+    calendars = []
+    calendars.extend(bills)
+    async_add_entities(calendars, update_before_add=True)
 
 
 class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
@@ -68,19 +71,17 @@ class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
         self,
         coordinator,
         entity_description: Optional[EntityDescription] = None,
-        fireflyiii_id: Optional[int] = None,
+        fireflyiii_id: Optional[str] = None,
         locale: Optional[str] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id, locale)
 
-        self._attr_translation_placeholders = {"bill_name": self.entity_data.name}
-
         self._attr_supported_features: List[str] = []
 
     @property
-    def entity_data(self) -> FireflyiiiBill:
+    def entity_data(self) -> FireflyiiiObjectBaseList:
         """Returns entity data - overide to Type Hints"""
-        return cast(FireflyiiiBill, super().entity_data)
+        return cast(FireflyiiiObjectBaseList, super().entity_data)
 
     async def async_create_event(self, **kwargs: Any) -> None:
         pass
@@ -114,43 +115,48 @@ class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
 
     def fireflyiii_events(
         self,
-        bills: Optional[FireflyiiiBill] = None,
+        bills: Optional[FireflyiiiObjectBaseList] = None,
         get_pay: Optional[bool] = True,
         get_paied: Optional[bool] = True,
     ) -> List[CalendarEvent]:
         """Returns FireflyIII Events"""
         events = []
 
-        if bills:
-            bills_data = bills
-        else:
-            bills_data = self.entity_data
+        if not bills:
+            bills = self.entity_data
 
-        if get_pay:
-            for pay in bills_data.pay:
-                start = pay.date.replace(hour=0, minute=0, second=0, microsecond=0)
-                end = start + timedelta(hours=24)
+        if not self.entity_data:
+            return []
 
-                event = CalendarEvent(
-                    # pylint: disable=line-too-long
-                    summary=f"{bills_data.name} {output_money(bills_data.value,bills_data.currency,self.locale)}",
-                    start=start.date(),
-                    end=end.date(),
-                )
-                events.append(event)
+        for _, bill in bills.items():
+            if not isinstance(bill, FireflyiiiBill):
+                continue
 
-        if get_paied:
-            for paid in bills_data.paid:
-                start = paid.date.replace(hour=0, minute=0, second=0, microsecond=0)
-                end = start + timedelta(hours=24)
+            if get_pay:
+                for pay in bill.pay:
+                    start = pay.date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    end = start + timedelta(hours=24)
 
-                event = CalendarEvent(
-                    # pylint: disable=line-too-long
-                    summary=f"✓ {bills_data.name} {output_money(paid.value,paid.currency,self.locale)}",
-                    start=start.date(),
-                    end=end.date(),
-                )
-                events.append(event)
+                    event = CalendarEvent(
+                        # pylint: disable=line-too-long
+                        summary=f"{bill.name} {output_money(bill.value,bill.currency,self.locale)}",
+                        start=start.date(),
+                        end=end.date(),
+                    )
+                    events.append(event)
+
+            if get_paied:
+                for paid in bill.paid:
+                    start = paid.date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    end = start + timedelta(hours=24)
+
+                    event = CalendarEvent(
+                        # pylint: disable=line-too-long
+                        summary=f"✓ {bill.name} {output_money(paid.value,paid.currency,self.locale)}",
+                        start=start.date(),
+                        end=end.date(),
+                    )
+                    events.append(event)
 
         events.sort(key=lambda x: x.start, reverse=False)
         return events
@@ -169,8 +175,5 @@ class FireflyiiiBillCalendarEntity(FireflyiiiEntityBase, CalendarEntity):
         bills = await coordinator.api.bills(
             ids=[self.fireflyiii_id], timerange=timerange
         )
-        bills_data = bills.get(self.fireflyiii_id, None)
-        if not isinstance(bills_data, FireflyiiiBill):
-            return []
 
-        return self.fireflyiii_events(bills_data)
+        return self.fireflyiii_events(bills)

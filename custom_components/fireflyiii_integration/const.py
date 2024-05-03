@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-import
 
-from typing import Any, Final, List, Mapping, Optional
+from typing import Any, Final, List, Mapping, Optional, Union
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -20,7 +20,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .integrations.fireflyiii_config import FireflyiiiConfig
 from .integrations.fireflyiii_coordinator import FireflyiiiCoordinator
-from .integrations.fireflyiii_objects import FireflyiiiObjectBase, FireflyiiiObjectType
+from .integrations.fireflyiii_objects import (
+    FireflyiiiObjectBase,
+    FireflyiiiObjectBaseList,
+    FireflyiiiObjectType,
+)
 
 DOMAIN = "fireflyiii_integration"
 MANUFACTURER = "FireflyIII"
@@ -103,12 +107,12 @@ class FireflyiiiEntityBase(CoordinatorEntity):
         self,
         coordinator: FireflyiiiCoordinator,
         entity_description: EntityDescription = None,
-        fireflyiii_id=0,
+        fireflyiii_id: Optional[str] = None,
         locale: Optional[str] = None,
     ):
         super().__init__(coordinator)
 
-        self._fireflyiii_id = fireflyiii_id
+        self._fireflyiii_id: Optional[str] = fireflyiii_id
         self._user_locale = locale
 
         if entity_description:
@@ -128,12 +132,12 @@ class FireflyiiiEntityBase(CoordinatorEntity):
         return self._user_locale if self._user_locale else ""
 
     @property
-    def fireflyiii_id(self) -> str:
+    def fireflyiii_id(self) -> Optional[str]:
         """Return FireflyIII object ID"""
         return self._fireflyiii_id
 
     @property
-    def fireflyiii_type(self) -> str:
+    def fireflyiii_type(self) -> Optional[str]:
         """Return FireflyIII object Type"""
         return self._type
 
@@ -184,9 +188,12 @@ class FireflyiiiEntityBase(CoordinatorEntity):
         return self._type
 
     @property
-    def entity_data(self) -> FireflyiiiObjectBase:
+    def entity_data(self) -> Union[FireflyiiiObjectBase, FireflyiiiObjectBaseList]:
         """Returns entity data"""
-        return self._entity_data.get(self.fireflyiii_id, FireflyiiiConfig())
+        if self.fireflyiii_id:
+            return self._entity_data.get(self.fireflyiii_id, {})
+        else:
+            return self._entity_data
 
     @property
     def device_info(self) -> dict:
@@ -203,7 +210,12 @@ class FireflyiiiEntityBase(CoordinatorEntity):
     def extra_state_attributes(self) -> Optional[Mapping[str, Any]]:
         """Return entity specific state attributes."""
 
-        attributes = ["fireflyiii_type", "fireflyiii_id"]
+        attributes = []
+        if self.fireflyiii_type:
+            attributes.append("fireflyiii_type")
+
+        if self.fireflyiii_id:
+            attributes.append("fireflyiii_id")
 
         attributes.extend(self._attr_sources)
 

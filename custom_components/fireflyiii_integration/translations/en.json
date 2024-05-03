@@ -44,11 +44,8 @@
   "entity": {
     "calendar": {
       "bills": {
-        "name": "{bill_name} Bills",
+        "name": "Bills",
         "state_attributes": {
-          "fireflyiii_id": {
-            "name": "FireflyIII id"
-          },
           "fireflyiii_type": {
             "name": "FireflyIII type",
             "state": {

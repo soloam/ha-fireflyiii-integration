@@ -842,6 +842,8 @@ class Fireflyiii:
                 message = {"msg": "Timeout"}
             except ContentTypeError as err:
                 message = {"msg": err}
+            except AssertionError as err:
+                message = {"msg": err}
 
             await session.close()
             return message

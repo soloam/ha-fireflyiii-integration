@@ -213,10 +213,16 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
     @property
     def api_data(self) -> FireflyiiiObjectBaseList:
         """Return API Returned data from coordinator"""
+        if not self.data:
+            return FireflyiiiObjectBaseList()
+
         return self.data
 
     async def _async_update_data(self):
         """Run coordinator update"""
+
+        if not await self.api.check_connection():
+            return False
 
         data_list = FireflyiiiObjectBaseList()
 

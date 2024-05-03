@@ -8,7 +8,6 @@ from typing import Optional, cast
 
 from homeassistant import config_entries, core
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     COORDINATOR,
@@ -105,7 +104,7 @@ class FireflyiiiAccountSensorEntity(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: Optional[int] = None,
+        fireflyiii_id: Optional[str] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
@@ -173,7 +172,7 @@ class FireflyiiiCategorySensorEntity(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: Optional[int] = None,
+        fireflyiii_id: Optional[str] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
@@ -220,7 +219,7 @@ class FireflyiiiPiggyBankSensorEntity(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: Optional[int] = None,
+        fireflyiii_id: Optional[str] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
@@ -283,7 +282,7 @@ class FireflyiiiBudgetSensorEntity(FireflyiiiEntityBase, SensorEntity):
         self,
         coordinator,
         entity_description: SensorEntityDescription = None,
-        fireflyiii_id: Optional[int] = None,
+        fireflyiii_id: Optional[str] = None,
     ):
         super().__init__(coordinator, entity_description, fireflyiii_id)
 
