@@ -43,18 +43,20 @@ async def async_setup_entry(
     if config_entry.options:
         config.update(config_entry.options)
 
-    coordinator = config[COORDINATOR]
+    coordinator: FireflyiiiCoordinator = config[COORDINATOR]
 
     user_locale = get_hass_locale(hass)
 
     bills = []
-    obj = FireflyiiiBillCalendarEntity(
-        coordinator,
-        FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
-        locale=user_locale,
-    )
 
-    bills.append(obj)
+    if coordinator.user_data.get_bills:
+        obj = FireflyiiiBillCalendarEntity(
+            coordinator,
+            FIREFLYIII_SENSOR_DESCRIPTIONS[FireflyiiiObjectType.BILLS],
+            locale=user_locale,
+        )
+
+        bills.append(obj)
 
     calendars = []
     calendars.extend(bills)
