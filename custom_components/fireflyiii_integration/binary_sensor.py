@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+from typing import Any, Mapping, Optional
 
 from homeassistant import config_entries, core
 from homeassistant.components.binary_sensor import BinarySensorEntity
@@ -54,3 +56,38 @@ class FireflyiiiServerBinarySensorEntity(FireflyiiiEntityBase, BinarySensorEntit
     def is_on(self) -> bool:
         """Return if connected."""
         return self.coordinator.last_update_success
+
+    @property
+    def start_date(self) -> Optional[datetime]:
+        """Import Start Date Time"""
+        timerange = self.coordinator.timerange
+        if not timerange:
+            return None
+
+        return timerange.start_datetime
+
+    @property
+    def end_date(self) -> Optional[datetime]:
+        """Import End Date Time"""
+        timerange = self.coordinator.timerange
+        if not timerange:
+            return None
+
+        return timerange.end_datetime
+
+    @property
+    def extra_state_attributes(self) -> Optional[Mapping[str, Any]]:
+        """Return entity specific state attributes."""
+
+        attributes = ["start_date", "end_date"]
+
+        state_attr = {}
+
+        for attr in attributes:
+            try:
+                if getattr(self, attr) is not None:
+                    state_attr[attr] = getattr(self, attr)
+            except AttributeError:
+                continue
+
+        return state_attr

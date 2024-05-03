@@ -171,9 +171,13 @@
     },
     "return_range": {
       "options": {
-        "year": "Last year",
-        "month": "Last month",
-        "week": "Last week",
+        "last_year": "Last year",
+        "last_month": "Last month",
+        "last_week": "Last week",
+        "yesterday": "Yesterday",
+        "year": "This year",
+        "month": "This month",
+        "week": "This week",
         "day": "Today",
         "lastx": "Custom"
       }

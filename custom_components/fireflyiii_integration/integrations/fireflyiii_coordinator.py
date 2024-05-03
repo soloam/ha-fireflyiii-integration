@@ -72,14 +72,19 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
 
         timerange = None
 
-        if self.user_data.is_date_range_year:
+        reference = datetime.today()
+
+        if self.user_data.is_date_range_year or self.user_data.is_date_range_last_year:
+            if self.user_data.is_date_range_last_year:
+                reference = reference.replace(year=reference.year - 1)
+
             year_start_date_str = self.user_data.year_start
 
             try:
                 year_start_date = datetime.strptime(year_start_date_str, "%Y-%m-%d")
             except ValueError:
-                year_start_date = datetime.today().replace(
-                    year=datetime.today().year,
+                year_start_date = reference.replace(
+                    year=reference.year,
                     month=1,
                     day=1,
                     hour=0,
@@ -95,7 +100,7 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
                 microsecond=0,
             )
 
-            if year_start_date > datetime.today():
+            if year_start_date > reference:
                 year_end_date = year_start_date - timedelta(microseconds=1)
 
                 year_start_date = year_start_date.replace(year=year_start_date.year - 1)
@@ -106,12 +111,19 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
 
             timerange = DateTimeRange(year_start_date, year_end_date)
 
-        elif self.user_data.is_date_range_month:
+        elif (
+            self.user_data.is_date_range_month
+            or self.user_data.is_date_range_last_month
+        ):
+            if self.user_data.is_date_range_last_month:
+                last_month = reference.replace(day=1) - timedelta(days=1)
+                reference = self._set_day_bound(last_month, reference.day)
+
             month_start_day = self.user_data.month_start
 
-            date_ref = self._set_day_bound(datetime.today(), month_start_day)
+            date_ref = self._set_day_bound(reference, month_start_day)
 
-            if date_ref > datetime.today():
+            if date_ref > reference:
                 date_start = date_ref - timedelta(days=date_ref.day + 7)
                 date_start = self._set_day_bound(date_start, month_start_day)
                 date_end = self._set_day_bound(date_ref, (month_start_day - 1)).replace(
@@ -125,12 +137,15 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
                 )
 
             timerange = DateTimeRange(date_start, date_end)
-        elif self.user_data.is_date_range_week:
+        elif (
+            self.user_data.is_date_range_week or self.user_data.is_date_range_last_week
+        ):
+            if self.user_data.is_date_range_last_week:
+                reference = reference - timedelta(weeks=1)
+
             week_start_day_str = self.user_data.week_start
 
-            date_ref = datetime.today().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            date_ref = reference.replace(hour=0, minute=0, second=0, microsecond=0)
 
             try:
                 week_start_day = WEEKDAYS.index(week_start_day_str)
@@ -142,11 +157,14 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
             week_end_date = week_end_date - timedelta(microseconds=1)
 
             timerange = DateTimeRange(week_start_date, week_end_date)
-        elif self.user_data.is_date_range_day:
-            day_start_date = datetime.today().replace(
+        elif self.user_data.is_date_range_day or self.user_data.is_date_range_yesterday:
+            if self.user_data.is_date_range_last_week:
+                reference = reference - timedelta(days=1)
+
+            day_start_date = reference.replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            day_end_date = datetime.today().replace(
+            day_end_date = reference.replace(
                 hour=23, minute=59, second=59, microsecond=59
             )
 
@@ -166,9 +184,7 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
             elif self.user_data.is_lastx_days_type_days:
                 keys_date["days"] = lastx_number
 
-            date_ref = datetime.today().replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            date_ref = reference.replace(hour=0, minute=0, second=0, microsecond=0)
 
             lastx_start_date = date_ref - timedelta(
                 days=keys_date["days"], weeks=keys_date["weeks"]

@@ -43,10 +43,14 @@ CONF_RETURN_CURRENCY = "return_currency"
 CONF_RETURN_PIGGY_BANKS = "return_piggy_banks"
 CONF_RETURN_RANGE = "return_range"
 CONF_RETURN_RANGE_DAY_TYPE = "day"
+CONF_RETURN_RANGE_LAST_MONTH_TYPE = "last_month"
+CONF_RETURN_RANGE_LAST_WEEK_TYPE = "last_week"
+CONF_RETURN_RANGE_LAST_YEAR_TYPE = "last_year"
 CONF_RETURN_RANGE_LASTX_TYPE = "lastx"
 CONF_RETURN_RANGE_MONTH_TYPE = "month"
 CONF_RETURN_RANGE_WEEK_TYPE = "week"
 CONF_RETURN_RANGE_YEAR_TYPE = "year"
+CONF_RETURN_RANGE_YESTERDAY_TYPE = "yesterday"
 
 CONF_NAME_DEFAULT = "FireflyIII"
 CONF_RETURN_ACCOUNT_TYPE_DEFAULT = ["asset"]
@@ -64,6 +68,10 @@ CONF_DATE_LASTX_BACK_TYPES = [
 ]
 
 CONF_RETURN_RANGE_TYPES = [
+    CONF_RETURN_RANGE_LAST_YEAR_TYPE,
+    CONF_RETURN_RANGE_LAST_MONTH_TYPE,
+    CONF_RETURN_RANGE_LAST_WEEK_TYPE,
+    CONF_RETURN_RANGE_YESTERDAY_TYPE,
     CONF_RETURN_RANGE_YEAR_TYPE,
     CONF_RETURN_RANGE_MONTH_TYPE,
     CONF_RETURN_RANGE_WEEK_TYPE,
@@ -195,9 +203,19 @@ class FireflyiiiConfig(UserDict):
         return self.date_range_type == CONF_RETURN_RANGE_YEAR_TYPE
 
     @property
+    def is_date_range_last_year(self) -> bool:
+        """Firefly config is ranged in years - flag"""
+        return self.date_range_type == CONF_RETURN_RANGE_LAST_YEAR_TYPE
+
+    @property
     def is_date_range_month(self) -> bool:
         """Firefly config is ranged in months - flag"""
         return self.date_range_type == CONF_RETURN_RANGE_MONTH_TYPE
+
+    @property
+    def is_date_range_last_month(self) -> bool:
+        """Firefly config is ranged in months - flag"""
+        return self.date_range_type == CONF_RETURN_RANGE_LAST_MONTH_TYPE
 
     @property
     def is_date_range_week(self) -> bool:
@@ -205,9 +223,19 @@ class FireflyiiiConfig(UserDict):
         return self.date_range_type == CONF_RETURN_RANGE_WEEK_TYPE
 
     @property
+    def is_date_range_last_week(self) -> bool:
+        """Firefly config is ranged in weeks - flag"""
+        return self.date_range_type == CONF_RETURN_RANGE_LAST_WEEK_TYPE
+
+    @property
     def is_date_range_day(self) -> bool:
         """Firefly config is ranged in days - flag"""
         return self.date_range_type == CONF_RETURN_RANGE_DAY_TYPE
+
+    @property
+    def is_date_range_yesterday(self) -> bool:
+        """Firefly config is ranged in days - flag"""
+        return self.date_range_type == CONF_RETURN_RANGE_YESTERDAY_TYPE
 
     @property
     def is_date_range_lastx(self) -> bool:
@@ -573,11 +601,20 @@ class FireflyiiiConfigSchema:
             schema.update(cls.account_types())
             schema.update(cls.account_ids())
 
-        if cls.data_source().is_date_range_year:
+        if (
+            cls.data_source().is_date_range_year
+            or cls.data_source().is_date_range_last_year
+        ):
             schema.update(cls.year_start())
-        elif cls.data_source().is_date_range_month:
+        elif (
+            cls.data_source().is_date_range_month
+            or cls.data_source().is_date_range_last_month
+        ):
             schema.update(cls.month_start())
-        elif cls.data_source().is_date_range_week:
+        elif (
+            cls.data_source().is_date_range_week
+            or cls.data_source().is_date_range_last_week
+        ):
             schema.update(cls.week_start())
         elif cls.data_source().is_date_range_lastx:
             schema.update(cls.lastx_time())
