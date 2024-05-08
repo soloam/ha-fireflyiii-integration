@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Get version
         id: version
@@ -18,7 +18,7 @@ jobs:
 
       - name: Patch manifest and zip
         run: |
-          sed -i 's/0.0.0/${{ steps.version.outputs.version }}/' custom_components/fireflyiii_integration/manifest.json
+          sed -i 's/v0.0.0/${{ steps.version.outputs.version }}/' custom_components/fireflyiii_integration/manifest.json
           cd custom_components/fireflyiii_integration/
           zip ../../fireflyiii_integration.zip -r ./
       - uses: svenstaro/upload-release-action@master
