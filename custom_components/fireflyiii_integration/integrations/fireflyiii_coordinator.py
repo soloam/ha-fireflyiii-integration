@@ -226,6 +226,8 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Skiping FireflyIII update, disconnected")
             return False
 
+        self.api.clear_cache()
+
         _LOGGER.debug("Updating FireflyIII sensors")
 
         data_list = FireflyiiiObjectBaseList()

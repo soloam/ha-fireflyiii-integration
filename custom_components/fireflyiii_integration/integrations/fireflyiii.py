@@ -4,6 +4,7 @@ import json
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
+from hashlib import md5
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -49,6 +50,17 @@ class Fireflyiii:
         self._about: FireflyiiiAbout = FireflyiiiAbout()
         self._preferences: FireflyiiiPreferences = FireflyiiiPreferences()
         self._timerange: Optional[DateTimeRange] = timerange
+        self._default_currency: Optional[FireflyiiiCurrency] = None
+        self.clear_cache()
+
+    def clear_cache(self):
+        """Clears cache"""
+        self._api_cache = {}
+
+    def _set_max_limit(self, params: dict):
+        """Sets max limits to avoid paging"""
+        if "limit" not in params:
+            params["limit"] = 9999999999
 
     @property
     async def version(self) -> str:
@@ -83,6 +95,10 @@ class Fireflyiii:
     @property
     async def default_currency(self) -> FireflyiiiCurrency:
         """Get FireflyIII Default Currency"""
+
+        if self._default_currency:
+            return self._default_currency
+
         default_currency = await self._request_api("GET", "/currencies/default")
         if not "data" in default_currency:
             _LOGGER.error(
@@ -110,7 +126,7 @@ class Fireflyiii:
             enabled=attributes.get("enabled", True),
             decimal_places=attributes.get("decimal_places", 2),
         )
-
+        self._default_currency = default_currency
         return default_currency
 
     @property
@@ -216,7 +232,10 @@ class Fireflyiii:
 
         account_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.ACCOUNTS)
 
-        accounts = await self._request_api("GET", "/accounts")
+        params: dict = {}
+        self._set_max_limit(params)
+
+        accounts = await self._request_api("GET", "/accounts", params)
         if not "data" in accounts:
             _LOGGER.error(
                 "Invalid response from server on accounts, "
@@ -353,7 +372,10 @@ class Fireflyiii:
         """Get FireflyIII categories"""
         _LOGGER.debug("Updating FireflyIII categories")
 
-        categories = await self._request_api("GET", "/categories")
+        params: dict = {}
+        self._set_max_limit(params)
+
+        categories = await self._request_api("GET", "/categories", params)
         if not "data" in categories:
             _LOGGER.error(
                 "Invalid response from server on categories, "
@@ -498,7 +520,10 @@ class Fireflyiii:
             type=FireflyiiiObjectType.PIGGY_BANKS
         )
 
-        piggy_banks = await self._request_api("GET", "/piggy-banks")
+        params: dict = {}
+        self._set_max_limit(params)
+
+        piggy_banks = await self._request_api("GET", "/piggy-banks", params)
         if not "data" in piggy_banks:
             _LOGGER.error(
                 "Invalid response from server on piggy banks, "
@@ -555,18 +580,19 @@ class Fireflyiii:
 
         budgets_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.BUDGETS)
 
-        date_range = {}
+        params = {}
         if (
             self._timerange
             and self._timerange.start_datetime
             and self._timerange.end_datetime
         ):
-            date_range = {
+            params = {
                 "start": self._timerange.start_datetime.strftime("%Y-%m-%d"),
                 "end": self._timerange.end_datetime.strftime("%Y-%m-%d"),
             }
 
-        budgets = await self._request_api("GET", "/budgets", date_range)
+        self._set_max_limit(params)
+        budgets = await self._request_api("GET", "/budgets", params)
         if not "data" in budgets:
             _LOGGER.error(
                 "Invalid response from server on budgets, "
@@ -588,7 +614,7 @@ class Fireflyiii:
                 continue
 
             budget_limits = await self._request_api(
-                "GET", f"/budgets/{budget_id}/limits", date_range
+                "GET", f"/budgets/{budget_id}/limits", params
             )
             if not "data" in budget_limits or len(budget_limits["data"]) < 1:
                 budget_limits = None
@@ -656,20 +682,22 @@ class Fireflyiii:
                 )
                 get_timerange.set_end_datetime(end_date)
 
-        date_range = {}
+        params = {}
         if (
             get_timerange
             and get_timerange.start_datetime
             and get_timerange.end_datetime
         ):
-            date_range = {
+            params = {
                 "start": get_timerange.start_datetime.strftime("%Y-%m-%d"),
                 "end": get_timerange.end_datetime.strftime("%Y-%m-%d"),
             }
 
         bill_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.BILLS)
 
-        bills = await self._request_api("GET", "/bills", date_range)
+        self._set_max_limit(params)
+
+        bills = await self._request_api("GET", "/bills", params)
         if not "data" in bills:
             _LOGGER.error(
                 "Invalid response from server on bills, "
@@ -897,6 +925,16 @@ class Fireflyiii:
         header["Content-Type"] = "application/json"
         header["Accept"] = "application/json"
 
+    def _request_hash(self, path: str, params: Optional[dict] = None):
+        hash_key = md5(
+            (
+                md5(path.encode("utf-8")).hexdigest()
+                + md5(json.dumps(params).encode("utf-8")).hexdigest()
+            ).encode("utf-8")
+        ).hexdigest()
+
+        return hash_key
+
     async def _request_api(
         self,
         method="GET",
@@ -906,6 +944,15 @@ class Fireflyiii:
         timeout=10,
     ):
         """Request FireflyIII API"""
+        hash_key = None
+
+        if method.upper() == "GET":
+            hash_key = self._request_hash(path, params)
+            if hash_key in self._api_cache:
+                _LOGGER.debug("FireflyIII api response from cache for '%s' ok", path)
+                return self._api_cache[hash_key]
+
+        _LOGGER.debug("Requesting FireflyIII api '%s'", path)
 
         url = f"{self.host_api}{path}"
 
@@ -917,8 +964,6 @@ class Fireflyiii:
         self._set_headers(request_headers)
 
         message = None
-
-        _LOGGER.debug("Requesting FireflyIII api '%s'", path)
 
         async with aiohttp.ClientSession() as session:
             http_method = getattr(session, method)
@@ -958,6 +1003,9 @@ class Fireflyiii:
                     await session.close()
 
                     _LOGGER.debug("FireflyIII api response for '%s' ok", path)
+                    if hash_key:
+                        self._api_cache[hash_key] = message
+
                     return message
             except (TimeoutError, ServerTimeoutError):
                 _LOGGER.error("Error in server api call, timeout")
