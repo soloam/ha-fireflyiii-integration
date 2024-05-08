@@ -65,6 +65,7 @@ Feedbacks are more than welcome, also feature requests.
 # I just love coffee and beer
 
 [![buy_coffee]](https://www.buymeacoffee.com/soloam)
+
 [gh_last_commit]: https://img.shields.io/github/last-commit/soloam/ha-fireflyiii-integration
 [buy_coffee]: https://www.buymeacoffee.com/assets/img/custom_images/white_img.png
 [buy_coffee_badge]: https://img.shields.io/badge/Buy%20me%20a%20coffee-%F0%9F%8D%BA-lightgrey
