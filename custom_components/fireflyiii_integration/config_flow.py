@@ -4,10 +4,12 @@ import logging
 from typing import Any, Dict, Optional
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
-from homeassistant.core import callback
 
 from .const import DOMAIN
 from .integrations.fireflyiii_config import FireflyiiiConfig, FireflyiiiConfigSchema
+
+# from homeassistant.core import callback
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class FireflyiiiConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore
     """FireflyIII Integration config flow."""
 
-    VERSION = 2
+    VERSION = 1
     MINOR_VERSION = 0
 
     data: FireflyiiiConfig
@@ -79,11 +81,61 @@ class FireflyiiiConfigFlow(ConfigFlow, domain=DOMAIN):  # type: ignore
             errors=errors,
         )
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        """Get the options flow for this handler."""
-        return OptionsFlowHandler(config_entry)
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        """Reconfig Flow"""
+        errors: Dict[str, str] = {}
+        if user_input is not None:
+            entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+            old_data = entry.data.copy()
+            old_data.update(user_input)
+            fireflyiii_config = FireflyiiiConfig(old_data)
+            fireflyiii_api = await fireflyiii_config.get_api()
+
+            if not await fireflyiii_api.check_connection():
+                errors["base"] = "auth"
+
+            if not errors:
+                self.data = fireflyiii_config
+                FireflyiiiConfigSchema.set_data_source(self.data)
+
+                return self.async_show_form(
+                    step_id="reconfigure2",
+                    data_schema=FireflyiiiConfigSchema.schema_reconfigure2(),
+                    errors=errors,
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=FireflyiiiConfigSchema.schema_reconfigure(),
+            errors=errors,
+        )
+
+    async def async_step_reconfigure2(self, user_input: dict[str, Any] | None = None):
+        """Reconfig Flow"""
+        errors: Dict[str, str] = {}
+        if user_input is not None:
+            entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+            self.data.update(user_input)
+
+            if not errors:
+                return self.async_update_reload_and_abort(
+                    entry,
+                    title=self.data.name,
+                    data=self.data,
+                    reason="reconfigure_successful",
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure2",
+            data_schema=FireflyiiiConfigSchema.schema_reconfigure2(),
+            errors=errors,
+        )
+
+    # @staticmethod
+    # @callback
+    # def async_get_options_flow(config_entry):
+    #     """Get the options flow for this handler."""
+    #     return OptionsFlowHandler(config_entry)
 
 
 class OptionsFlowHandler(OptionsFlow):
@@ -100,6 +152,8 @@ class OptionsFlowHandler(OptionsFlow):
     ) -> Dict[str, Any]:
         """Manage the options for the custom component."""
         errors: Dict[str, str] = {}
+
+        await FireflyiiiConfigSchema.data_source().get_api()
 
         if user_input is not None:
             if not errors:

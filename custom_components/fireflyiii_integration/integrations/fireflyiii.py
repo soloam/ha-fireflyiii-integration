@@ -1,15 +1,19 @@
 """FireflyIII Integration API Access Class"""
 
 import json
+import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import aiohttp
-from aiohttp.client_exceptions import ContentTypeError, ServerTimeoutError
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ContentTypeError,
+    ServerTimeoutError,
+)
 from datetimerange import DateTimeRange
 
-from .fireflyiii_exceptions import AuthenticationError, ParseJSONError
 from .fireflyiii_objects import (
     FireflyiiiAbout,
     FireflyiiiAccount,
@@ -24,6 +28,8 @@ from .fireflyiii_objects import (
     FireflyiiiPreferences,
     FireflyiiiTransaction,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Fireflyiii:
@@ -79,9 +85,19 @@ class Fireflyiii:
         """Get FireflyIII Default Currency"""
         default_currency = await self._request_api("GET", "/currencies/default")
         if not "data" in default_currency:
+            _LOGGER.error(
+                "Invalid response from server on default currency, "
+                + "expected JSON data response: '%s'",
+                default_currency,
+            )
             return FireflyiiiCurrency.empty()
 
         if not "attributes" in default_currency["data"]:
+            _LOGGER.error(
+                "Invalid response from server on default currency, "
+                + "expected JSON attributes response: '%s'",
+                default_currency,
+            )
             return FireflyiiiCurrency.empty()
 
         attributes = default_currency["data"].get("attributes", {})
@@ -106,13 +122,28 @@ class Fireflyiii:
 
         year_start = await self._request_api("GET", "/preferences/fiscalYearStart")
         if not "data" in year_start:
+            _LOGGER.error(
+                "Invalid response from server on start day of the year, "
+                + "expected JSON data response: '%s'",
+                year_start,
+            )
             return ""
 
         if not "attributes" in year_start["data"]:
+            _LOGGER.error(
+                "Invalid response from server on start day of the year, "
+                + "expected JSON attributes response: '%s'",
+                year_start,
+            )
             return ""
 
         start = year_start["data"]["attributes"].get("data", "")
         if not start:
+            _LOGGER.error(
+                "Invalid response from server on start day of the year, "
+                + "expected JSON data in attributes response: '%s'",
+                year_start,
+            )
             return ""
 
         start = start + "-" + str(datetime.today().year)
@@ -120,6 +151,11 @@ class Fireflyiii:
         try:
             date = datetime.strptime(start, "%m-%d-%Y")
         except ValueError:
+            _LOGGER.error(
+                "Invalid response from server on start day of the year, "
+                + "invalid start date, should have date in mm-dd-yyyy: '%s'",
+                year_start,
+            )
             return ""
 
         self._preferences.year_start = date.strftime("%Y-%m-%d")
@@ -135,13 +171,19 @@ class Fireflyiii:
         # pylint: disable=import-outside-toplevel
         from .fireflyiii_config import FireflyiiiConfig as ffconfig
 
+        account_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.ACCOUNTS)
+
         accounts = await self._request_api("GET", "/autocomplete/accounts")
         if not isinstance(accounts, list):
-            return FireflyiiiObjectBaseList()
+            _LOGGER.error(
+                "Invalid response from server on accounts basic list, "
+                + "should have a list: '%s'",
+                accounts,
+            )
+            return account_list
 
         fireflyiii_config = ffconfig()
 
-        account_list = FireflyiiiObjectBaseList()
         for account in accounts:
             account_type = account.get("type", "")
 
@@ -169,10 +211,18 @@ class Fireflyiii:
         self, types: Optional[List[str]] = None, ids: Optional[List[str]] = None
     ) -> FireflyiiiObjectBaseList:
         """Get FireflyIII Accounts"""
+
+        _LOGGER.debug("Updating FireflyIII accounts")
+
         account_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.ACCOUNTS)
 
         accounts = await self._request_api("GET", "/accounts")
         if not "data" in accounts:
+            _LOGGER.error(
+                "Invalid response from server on accounts, "
+                + "expected JSON data response: '%s'",
+                accounts,
+            )
             return account_list
 
         # // Get Account State at the end of the timerange
@@ -218,6 +268,12 @@ class Fireflyiii:
                 param = {"date": dt_range}
                 account_obj = await self._request_api("GET", path, param)
                 if not account_obj or "data" not in account_obj:
+                    _LOGGER.error(
+                        "Invalid response from server on accounts for id %s, "
+                        + "expected JSON data response: '%s'",
+                        account_id,
+                        accounts,
+                    )
                     continue
 
                 data[range_key] = account_obj["data"]
@@ -240,11 +296,21 @@ class Fireflyiii:
             try:
                 balance = float(end_attributes.get("current_balance", 0))
             except ValueError:
+                _LOGGER.error(
+                    "Invalid response from server on 'current_balance', "
+                    + "expected float': '%s'",
+                    end_attributes,
+                )
                 balance = float(0)
 
             try:
                 balance_beginning = float(start_attibutes.get("current_balance", 0))
             except ValueError:
+                _LOGGER.error(
+                    "Invalid response from server on 'current_balance', "
+                    + "expected float': '%s'",
+                    end_attributes,
+                )
                 balance_beginning = float(0)
 
             account_obj = FireflyiiiAccount(
@@ -271,7 +337,7 @@ class Fireflyiii:
         if not isinstance(categories, list):
             return FireflyiiiObjectBaseList()
 
-        category_list = FireflyiiiObjectBaseList()
+        category_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.CATEGORIES)
         for category in categories:
             category_obj = FireflyiiiCategory(
                 id=category.get("id", ""),
@@ -285,8 +351,15 @@ class Fireflyiii:
 
     async def categories(self, ids=None, currency=None) -> FireflyiiiObjectBaseList:
         """Get FireflyIII categories"""
+        _LOGGER.debug("Updating FireflyIII categories")
+
         categories = await self._request_api("GET", "/categories")
         if not "data" in categories:
+            _LOGGER.error(
+                "Invalid response from server on categories, "
+                + "expected JSON data response: '%s'",
+                categories,
+            )
             return FireflyiiiObjectBaseList()
 
         date_range = {}
@@ -371,6 +444,11 @@ class Fireflyiii:
 
         currencies = await self._request_api("GET", "/currencies")
         if not "data" in currencies:
+            _LOGGER.error(
+                "Invalid response from server on currencies, "
+                + "expected JSON data response: '%s'",
+                currencies,
+            )
             return currency_list
 
         for currency in currencies["data"]:
@@ -414,12 +492,19 @@ class Fireflyiii:
     async def piggy_banks(self, ids=None) -> FireflyiiiObjectBaseList:
         """Get FireflyIII Piggy Banks"""
 
+        _LOGGER.debug("Updating FireflyIII piggy banks")
+
         piggy_bank_list = FireflyiiiObjectBaseList(
             type=FireflyiiiObjectType.PIGGY_BANKS
         )
 
         piggy_banks = await self._request_api("GET", "/piggy-banks")
         if not "data" in piggy_banks:
+            _LOGGER.error(
+                "Invalid response from server on piggy banks, "
+                + "expected JSON data response: '%s'",
+                piggy_banks,
+            )
             return piggy_bank_list
 
         for piggy_bank in piggy_banks["data"]:
@@ -466,6 +551,8 @@ class Fireflyiii:
     async def budgets(self, ids=None, currency=None) -> FireflyiiiObjectBaseList:
         """Get FireflyIII Budgets"""
 
+        _LOGGER.debug("Updating FireflyIII budgets")
+
         budgets_list = FireflyiiiObjectBaseList(type=FireflyiiiObjectType.BUDGETS)
 
         date_range = {}
@@ -481,6 +568,11 @@ class Fireflyiii:
 
         budgets = await self._request_api("GET", "/budgets", date_range)
         if not "data" in budgets:
+            _LOGGER.error(
+                "Invalid response from server on budgets, "
+                + "expected JSON data response: '%s'",
+                budgets,
+            )
             return budgets_list
 
         for budget in budgets["data"]:
@@ -545,6 +637,8 @@ class Fireflyiii:
     ) -> FireflyiiiObjectBaseList:
         """Get FireflyIII bills"""
 
+        _LOGGER.debug("Updating FireflyIII bills")
+
         get_timerange: Optional[DateTimeRange] = None
 
         if timerange:
@@ -577,6 +671,11 @@ class Fireflyiii:
 
         bills = await self._request_api("GET", "/bills", date_range)
         if not "data" in bills:
+            _LOGGER.error(
+                "Invalid response from server on bills, "
+                + "expected JSON data response: '%s'",
+                bills,
+            )
             return bill_list
 
         for bill in bills["data"]:
@@ -682,11 +781,22 @@ class Fireflyiii:
             for tid in ids:
                 transaction = await self._request_api("GET", f"{path}/{tid}")
                 if "data" not in transaction:
+                    _LOGGER.error(
+                        "Invalid response from server on transactions on id %s, "
+                        + "expected JSON data response: '%s'",
+                        tid,
+                        transaction,
+                    )
                     continue
                 transactions.append(transaction)
         else:
             transactions = await self._request_api("GET", path, params)
             if "data" not in transactions:
+                _LOGGER.error(
+                    "Invalid response from server on transactions, "
+                    + "expected JSON data response: '%s'",
+                    transactions,
+                )
                 return transactions_list
 
         for transaction in transactions:
@@ -759,6 +869,9 @@ class Fireflyiii:
 
         self._about = about
 
+        if not self._about:
+            _LOGGER.debug("No return from server, possible authentication error")
+
         return about
 
     async def preferences(self) -> FireflyiiiPreferences:
@@ -803,6 +916,10 @@ class Fireflyiii:
         self._set_auth(request_headers)
         self._set_headers(request_headers)
 
+        message = None
+
+        _LOGGER.debug("Requesting FireflyIII api '%s'", path)
+
         async with aiohttp.ClientSession() as session:
             http_method = getattr(session, method)
 
@@ -824,26 +941,35 @@ class Fireflyiii:
                     try:
                         message = json.loads(message)
                     except ValueError:
-                        pass
+                        _LOGGER.error("Response from server not a JSON: %s", message)
 
-                    if resp.status == 400:
-                        if "msg" in message.keys():
-                            pass  # index = "msg"
-                        elif "error" in message.keys():
-                            pass  # index = "error"
-                        raise ParseJSONError
-                    if resp.status == 401:
-                        raise AuthenticationError
-                    if resp.status in [404, 405, 500]:
-                        pass
+                    if "message" in message:
+                        _LOGGER.error(
+                            "Error in server api call: %s", message.get("message")
+                        )
 
+                    if resp.status not in [200]:
+                        _LOGGER.error(
+                            "Error in server api call, status %s: %s",
+                            resp.status,
+                            message.get("message", ""),
+                        )
+
+                    await session.close()
+
+                    _LOGGER.debug("FireflyIII api response for '%s' ok", path)
                     return message
             except (TimeoutError, ServerTimeoutError):
-                message = {"msg": "Timeout"}
-            except ContentTypeError as err:
-                message = {"msg": err}
-            except AssertionError as err:
-                message = {"msg": err}
+                _LOGGER.error("Error in server api call, timeout")
+            except ContentTypeError:
+                _LOGGER.error("Error in server api call, content type error")
+            except AssertionError:
+                _LOGGER.error("Error in server api call, AssertionError")
+            except ClientConnectorError:
+                _LOGGER.error("Error in server api call, connection error")
+
+            if not isinstance(message, dict):
+                return {}
 
             await session.close()
             return message

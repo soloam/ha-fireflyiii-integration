@@ -25,9 +25,6 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         self._entry = entry
         self._hass = hass
 
-        self._user_data = FireflyiiiConfig(self._entry.data)
-        self._user_data.update(self._entry.options)
-
         self.name = f"FireflyIII ({self.user_data.name})"
 
         self._api = Fireflyiii(
@@ -203,7 +200,11 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
     @property
     def user_data(self) -> FireflyiiiConfig:
         """Return User input config flow data"""
-        return self._user_data
+
+        _user_data = FireflyiiiConfig(self._entry.data)
+        _user_data.update(self._entry.options)
+
+        return _user_data
 
     @property
     def api(self) -> Fireflyiii:
@@ -222,7 +223,10 @@ class FireflyiiiCoordinator(DataUpdateCoordinator):
         """Run coordinator update"""
 
         if not await self.api.check_connection():
+            _LOGGER.warning("Skiping FireflyIII update, disconnected")
             return False
+
+        _LOGGER.debug("Updating FireflyIII sensors")
 
         data_list = FireflyiiiObjectBaseList()
 

@@ -2,7 +2,8 @@
   "config": {
     "error": {
       "auth": "The auth token provided is not valid.",
-      "invalid_url": "The provided URL is not valid, set url with port http://fireflyiiiurl:port"
+      "invalid_url": "The provided URL is not valid, set url with port http://fireflyiiiurl:port",
+      "reconfigure_successful": "FireflyIII reconfigured successfully"
     },
     "step": {
       "user": {
@@ -38,6 +39,19 @@
         },
         "description": "Select configurations for the sensors",
         "title": "Configuration"
+      },
+      "reconfigure": {
+        "data": {
+          "access_token": "FireflyIII access token",
+          "url": "FireflyIII url"
+        }
+      },
+      "reconfigure2": {
+        "data": {
+          "return_account_type": "Types of accounts to return",
+          "return_accounts_ids": "Return only this accounts (empty for all)",
+          "return_category_ids": "Return only this categories (empty for all)"
+        }
       }
     }
   },

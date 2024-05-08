@@ -173,9 +173,9 @@ class FireflyiiiConfig(UserDict):
         return self.get(CONF_RETURN_CATEGORIES_ID, [])
 
     @property
-    def categories_autocomplete(self):
+    def categories_autocomplete(self) -> Dict[str, Dict[Any, Any]]:
         """Firefly config category list - helper"""
-        return self._api_data["categories_autocomplete"]
+        return self._api_data.get("categories_autocomplete", {})
 
     @property
     def account_types(self) -> List[str]:
@@ -193,9 +193,9 @@ class FireflyiiiConfig(UserDict):
         return self.get(CONF_RETURN_ACCOUNT_ID, [])
 
     @property
-    def accounts_autocomplete(self):
+    def accounts_autocomplete(self) -> Dict[str, Dict[Any, Any]]:
         """Firefly config accounts list - helper"""
-        return self._api_data["accounts_autocomplete"]
+        return self._api_data.get("accounts_autocomplete", {})
 
     @property
     def is_date_range_year(self) -> bool:
@@ -386,10 +386,13 @@ class FireflyiiiConfigSchema:
         }
 
     @classmethod
-    def schema_auth(cls):
+    def schema_auth(cls, name_schema=True):
         """Config flow Schema auth"""
+
         schema = {}
-        schema.update(cls.name())
+        if name_schema:
+            schema.update(cls.name())
+
         schema.update(cls.url())
         schema.update(cls.access_token())
         return vol.Schema(schema)
@@ -473,7 +476,7 @@ class FireflyiiiConfigSchema:
                     # pylint: disable=line-too-long
                     options=[
                         {"label": category.name, "value": category_id}
-                        for category_id, category in cls.data_source().categories_autocomplete.categories.items()
+                        for category_id, category in cls.data_source().categories_autocomplete.items()
                     ],
                 )
             )
@@ -508,7 +511,7 @@ class FireflyiiiConfigSchema:
                     # pylint: disable=line-too-long
                     options=[
                         {"label": account.name, "value": account_id}
-                        for account_id, account in cls.data_source().accounts_autocomplete.accounts.items()
+                        for account_id, account in cls.data_source().accounts_autocomplete.items()
                     ],
                 )
             )
@@ -591,43 +594,54 @@ class FireflyiiiConfigSchema:
         }
 
     @classmethod
-    def schema_config(cls):
+    def schema_config(cls, time_schema=True):
         """Config flow Schema config"""
         schema = {}
 
         if cls.data_source().get_categories:
             schema.update(cls.categories_ids())
+
         if cls.data_source().get_accounts:
             schema.update(cls.account_types())
             schema.update(cls.account_ids())
 
-        if (
-            cls.data_source().is_date_range_year
-            or cls.data_source().is_date_range_last_year
-        ):
-            schema.update(cls.year_start())
-        elif (
-            cls.data_source().is_date_range_month
-            or cls.data_source().is_date_range_last_month
-        ):
-            schema.update(cls.month_start())
-        elif (
-            cls.data_source().is_date_range_week
-            or cls.data_source().is_date_range_last_week
-        ):
-            schema.update(cls.week_start())
-        elif cls.data_source().is_date_range_lastx:
-            schema.update(cls.lastx_time())
-            schema.update(cls.lastx_type())
+        if time_schema:
+            if (
+                cls.data_source().is_date_range_year
+                or cls.data_source().is_date_range_last_year
+            ):
+                schema.update(cls.year_start())
+            elif (
+                cls.data_source().is_date_range_month
+                or cls.data_source().is_date_range_last_month
+            ):
+                schema.update(cls.month_start())
+            elif (
+                cls.data_source().is_date_range_week
+                or cls.data_source().is_date_range_last_week
+            ):
+                schema.update(cls.week_start())
+            elif cls.data_source().is_date_range_lastx:
+                schema.update(cls.lastx_time())
+                schema.update(cls.lastx_type())
 
         return vol.Schema(schema)
 
     @classmethod
     def schema_options(cls):
         """Config flow Schema options"""
-        schema = {}
+        schema = cls.schema_config(time_schema=False).schema
 
-        schema.update(cls.url())
-        schema.update(cls.access_token())
+        return vol.Schema(schema)
 
+    @classmethod
+    def schema_reconfigure(cls):
+        """Config flow Schema Reconfigure"""
+        schema = cls.schema_auth(name_schema=False).schema
+        return vol.Schema(schema)
+
+    @classmethod
+    def schema_reconfigure2(cls):
+        """Config flow Schema Reconfigure"""
+        schema = cls.schema_config(time_schema=False).schema
         return vol.Schema(schema)
