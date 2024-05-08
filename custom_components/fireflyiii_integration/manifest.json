@@ -8,5 +8,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/soloam/ha-fireflyiii-integration/issues",
   "requirements": ["aiohttp", "babel", "datetimerange"],
-  "version": "0.0.0"
+  "version": "v0.0.0"
 }
