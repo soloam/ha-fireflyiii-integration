@@ -6,6 +6,7 @@
   "dependencies": [],
   "documentation": "https://github.com/soloam/ha-fireflyiii-integration",
   "iot_class": "cloud_polling",
-  "requirements": ["aiohttp", "babel","datetimerange"],
-  "version": "1.0.0"
+  "requirements": ["aiohttp", "babel", "datetimerange"],
+  "version": "0.0.0",
+  "issue_tracker": "https://github.com/soloam/ha-fireflyiii-integration/issues"
 }

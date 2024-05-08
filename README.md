@@ -1,40 +1,12 @@
-# THIS IS A WORK IN PROGRESS USE AT YOUR OWN RISK!!!!!!!
-
-# REPORT BUGS AND SUGGEST IMPROVEMENTS!!!!
-
-#### Some of the concluded features can change durring Beta
-
-# BETA ROADMAP
-
-- [x] Config Flow \*
-- [x] Categories
-- [x] Accounts
-- [x] Bills in calendar
-- [x] Import Piggy Banks
-- [x] Import Budgets
-- [ ] Services
-- [ ] Add to HACS
-
-# Planned Improvements
-
-- [ ] Translations
-- [ ] Auto create Webhooks in FireflyIII
-- [ ] Handle Webhooks to instant response
-- [ ] Tests
-
-\* - Please note that I’ll not be retrofitting configs to versions until its final! So on some releases of beta I’ll add to the release notes a information to delete the integration and add it again. No need to remove from HACS, just remove from Home Assistant and make the config again!
-
-Feedbacks are more than welcome, also feature requests.
-
-#
-
-#
-
 # FireflyIII Integration
 
 _Component to integrate with [FireflyIII][fireflyiii]._
 
 [fireflyiii]: https://www.firefly-iii.org/
+
+This is a custom component developed by me to integrate FireflyIII with Home Assistant, this project is independent from the great work done by James Cole in FireflyIII
+
+[![gh_release](https://img.shields.io/github/v/release/soloam/ha-fireflyiii-integration)](../../releases) [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration) [![gh_last_commit]](../../commits/master) [![buy_coffee_badge]](https://www.buymeacoffee.com/soloam)
 
 **This component will set up the following platforms.**
 
@@ -73,3 +45,27 @@ You probably do not want to do this! Use the HACS method above unless you know w
 </details>
 
 ## Configuration is done in the UI
+
+# Planned Improvements
+
+- [ ] Services
+- [ ] Translations
+- [ ] Auto create Webhooks in FireflyIII
+- [ ] Handle Webhooks to instant response
+- [ ] Tests
+
+\* - Please note that I’ll not be retrofitting configs to versions until its final! So on some releases of beta I’ll add to the release notes a information to delete the integration and add it again. No need to remove from HACS, just remove from Home Assistant and make the config again!
+
+Feedbacks are more than welcome, also feature requests.
+
+# References
+
+- FieflyIII - https://www.firefly-iii.org/
+
+# I just love coffee and beer
+
+[![buy_coffee]](https://www.buymeacoffee.com/soloam)
+
+[gh_last_commit]: https://img.shields.io/github/last-commit/soloam/ha-fireflyiii-integration
+[buy_coffee]: https://www.buymeacoffee.com/assets/img/custom_images/white_img.png
+[buy_coffee_badge]: https://img.shields.io/badge/Buy%20me%20a%20coffee-%F0%9F%8D%BA-lightgrey
