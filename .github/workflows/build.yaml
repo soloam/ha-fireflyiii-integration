@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get version
+        id: version
+        uses: home-assistant/actions/helpers/version@master
+
+      - name: Patch manifest and zip
+        run: |
+          sed -i 's/0.0.0/${{ steps.version.outputs.version }}/' custom_components/fireflyiii_integration/manifest.json
+          cd custom_components/fireflyiii_integration/
+          zip ../../fireflyiii_integration.zip -r ./
+      - uses: svenstaro/upload-release-action@master
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./fireflyiii_integration.zip
+          asset_name: fireflyiii_integration.zip
+          tag: ${{ github.ref }}
+          overwrite: true
