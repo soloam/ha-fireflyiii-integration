@@ -28,7 +28,7 @@ replacers:
 exclude-labels:
   - "skip-changelog"
 exclude-contributors:
-  - soloam
+  - "soloam"
 version-resolver:
   major:
     labels:
