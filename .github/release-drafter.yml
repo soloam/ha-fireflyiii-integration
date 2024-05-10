@@ -49,6 +49,8 @@ autolabeler:
   - label: "github structure"
     files:
       - ".github/*"
+    title:
+      - "/github_flow:/i"
   - label: "documentation"
     files:
       - "*.md"
@@ -73,9 +75,7 @@ template: |
 
   $CHANGES
 
-  ## Thanks to all the contributors
-
-  $CONTRIBUTORS
-
   ## Links
   - [Submit bugs/feature requests](https://github.com/soloam/ha-fireflyiii-integration/issues)
+
+  ## Thanks to all the contributors
