@@ -54,9 +54,7 @@ You probably do not want to do this! Use the HACS method above unless you know w
 - [ ] Handle Webhooks to instant response
 - [ ] Tests to integration
 
-\* - Please note that I’ll not be retrofitting configs to versions until its final! So on some releases of beta I’ll add to the release notes a information to delete the integration and add it again. No need to remove from HACS, just remove from Home Assistant and make the config again!
-
-Feedbacks are more than welcome, also feature requests.
+Feedbacks and feature requests are welcome.
 
 # References
 
