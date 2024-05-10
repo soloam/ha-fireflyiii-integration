@@ -10,10 +10,11 @@ This is a custom component developed by me to integrate FireflyIII with Home Ass
 
 **This component will set up the following platforms.**
 
-| Platform   | Description                       |
-| ---------- | --------------------------------- |
-| `sensor`   | Show info from an FireflyIII API. |
-| `calendar` | Calendar for bills                |
+| Platform        | Description                       |
+| --------------- | --------------------------------- |
+| `sensor`        | Show info from an FireflyIII API. |
+| `calendar`      | Calendar for bills                |
+| `binary_sensor` | Server status                     |
 
 ## Installation via HACS (recommended)
 
