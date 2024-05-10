@@ -27,6 +27,7 @@ replacers:
     replace: "- $1"
 exclude-labels:
   - "skip-changelog"
+  - "github structure"
 exclude-contributors:
   - "soloam"
 version-resolver:
