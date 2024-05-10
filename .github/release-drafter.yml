@@ -22,6 +22,9 @@ categories:
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 sort-direction: ascending
 change-title-escapes: '\<*_&'
+replacers:
+  - search: '/^- [a-zA-Z\_\-]*\: (.*@.*\))$/gm'
+    replace: "- $1"
 exclude-labels:
   - "skip-changelog"
 exclude-contributors:
