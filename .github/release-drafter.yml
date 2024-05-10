@@ -71,11 +71,9 @@ autolabeler:
 template: |
   # FireflyIII Integration v$RESOLVED_VERSION [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/$RESOLVED_VERSION)
 
-  ## Changes
+  ## 🛠️ Changes
 
   $CHANGES
 
   ## Links
   - [Submit bugs/feature requests](https://github.com/soloam/ha-fireflyiii-integration/issues)
-
-  ## Thanks to all the contributors
