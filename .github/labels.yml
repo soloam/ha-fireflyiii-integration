@@ -52,4 +52,4 @@
 
 - name: skip-changelog
   description: Don't add this to changelog
-  color: 808080
+  color: "808080"
