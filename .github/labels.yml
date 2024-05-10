@@ -49,3 +49,7 @@
 - name: patch
   description: Patch changes. Used for release bump
   color: 16970B
+
+- name: skip-changelog
+  description: Don't add this to changelog
+  color: 808080

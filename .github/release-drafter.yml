@@ -20,7 +20,12 @@ categories:
     labels:
       - "documentation"
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+sort-direction: ascending
 change-title-escapes: '\<*_&'
+exclude-labels:
+  - "skip-changelog"
+exclude-contributors:
+  - soloam
 version-resolver:
   major:
     labels:
@@ -47,18 +52,26 @@ autolabeler:
   - label: "documentation"
     files:
       - "*.md"
-  - label: "bug"
     title:
-      - "/\\[?(bug)\\]?.*/i"
-  - label: "bugfix"
+      - "/documentation:/i"
+  - label: "fix"
     title:
-      - "/\\[?(fix)\\]?.*/i"
+      - "/bugfix:/i"
+      - "/bug:/i"
+      - "/fix:/i"
   - label: "feature"
     title:
-      - "/\\[?(add|feat)\\]?.*/i"
-  - label: "feature"
+      - "/add:/i"
+      - "/feature:/i"
+  - label: "breaking_change"
     title:
-      - "/\\[?(breaking)\\]?.*/i"
+      - "/breaking:/i"
+      - "/breaking-change:/i"
+      - "/breaking_change:/i"
 template: |
-  ## Changes
+  [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/$RESOLVED_VERSION)
+
   $CHANGES
+
+  ## Links
+  - [Submit bugs/feature requests](https://github.com/soloam/ha-fireflyiii-integration/issues)
