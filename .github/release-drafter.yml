@@ -39,13 +39,9 @@ version-resolver:
     labels:
       - "minor"
       - "feature"
-      - "enhancement"
   patch:
     labels:
-      - "patch"
       - "fix"
-      - "bugfix"
-      - "bug"
       - "maintenance"
       - "documentation"
   default: patch
@@ -60,22 +56,26 @@ autolabeler:
       - "/documentation:/i"
   - label: "fix"
     title:
-      - "/bugfix:/i"
-      - "/bug:/i"
       - "/fix:/i"
   - label: "feature"
     title:
       - "/add:/i"
-      - "/feature:/i"
+  - label: "maintenance"
+    title:
+      - "/maintenance:/i"
   - label: "breaking_change"
     title:
-      - "/breaking:/i"
       - "/breaking-change:/i"
-      - "/breaking_change:/i"
 template: |
-  [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/$RESOLVED_VERSION)
+  # FireflyIII Integration v$RESOLVED_VERSION [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/$RESOLVED_VERSION)
+
+  ## Changes
 
   $CHANGES
+
+  ## Thanks to all the contributors
+
+  $CONTRIBUTORS
 
   ## Links
   - [Submit bugs/feature requests](https://github.com/soloam/ha-fireflyiii-integration/issues)
