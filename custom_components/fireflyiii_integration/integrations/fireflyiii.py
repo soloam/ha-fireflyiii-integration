@@ -733,6 +733,8 @@ class Fireflyiii:
             for paid in paid_list:
                 date = datetime.fromisoformat(paid.get("date", ""))
 
+                transaction = None
+
                 transactions_list = await self.transactions(
                     ids=[paid.get("transaction_journal_id")]
                 )
