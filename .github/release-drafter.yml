@@ -69,7 +69,7 @@ autolabeler:
     title:
       - "/breaking-change:/i"
 template: |
-  # FireflyIII Integration v$RESOLVED_VERSION [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/$RESOLVED_VERSION)
+  # FireflyIII Integration v$RESOLVED_VERSION [![Downloads for this release](https://img.shields.io/github/downloads/soloam/ha-fireflyiii-integration/v$RESOLVED_VERSION/total.svg)](https://github.com/soloam/ha-fireflyiii-integration/releases/v$RESOLVED_VERSION)
 
   ## 🛠️ Changes
 
