@@ -617,7 +617,7 @@ class Fireflyiii:
                 "GET", f"/budgets/{budget_id}/limits", params
             )
             if not budget_limits or not "data" in budget_limits or len(budget_limits["data"]) < 1:
-                budget_limits = {}
+                budget_limit = {}
             else:
                 budget_limit = budget_limits["data"][0]
 
