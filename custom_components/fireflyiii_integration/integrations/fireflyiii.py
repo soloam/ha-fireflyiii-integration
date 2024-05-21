@@ -624,8 +624,8 @@ class Fireflyiii:
             limit_attributes = budget_limit.get("attributes", {})
 
             try:
-                start_limit = datetime.fromisoformat(limit_attributes.get("start"))
-                end_limit = datetime.fromisoformat(limit_attributes.get("end"))
+                start_limit = datetime.fromisoformat(limit_attributes.get("start",""))
+                end_limit = datetime.fromisoformat(limit_attributes.get("end",""))
             except (ValueError,  TypeError):
                 start_limit = None
                 end_limit = None
