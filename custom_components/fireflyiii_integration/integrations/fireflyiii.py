@@ -60,7 +60,7 @@ class Fireflyiii:
     def _set_max_limit(self, params: dict):
         """Sets max limits to avoid paging"""
         if "limit" not in params:
-            params["limit"] = 9999999999
+            params["limit"] = 131337
 
     @property
     async def version(self) -> str:
