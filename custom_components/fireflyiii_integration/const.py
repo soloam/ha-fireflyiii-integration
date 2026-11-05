@@ -7,8 +7,8 @@ from typing import Any, Final, List, Mapping, Optional, Union
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntityDescription,
-    EntityDescription,
 )
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntityDescription,

@@ -9,12 +9,12 @@ from typing import Any, List, Optional, cast
 from homeassistant import config_entries, core
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityDescription
 
 from .const import (
     COORDINATOR,
     DOMAIN,
     FIREFLYIII_SENSOR_DESCRIPTIONS,
-    EntityDescription,
     FireflyiiiEntityBase,
 )
 from .integrations.fireflyiii_coordinator import FireflyiiiCoordinator
